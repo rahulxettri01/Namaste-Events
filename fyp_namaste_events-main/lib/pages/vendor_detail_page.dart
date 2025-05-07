@@ -9,11 +9,13 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class VendorDetailPage extends StatefulWidget {
   final dynamic vendorData;
   final String vendorType;
+  final String token;
 
   const VendorDetailPage({
     Key? key,
     required this.vendorData,
     required this.vendorType,
+    required this.token,
   }) : super(key: key);
 
   @override
@@ -256,7 +258,7 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                       vendorId: widget.vendorData['_id'] ?? '',
                       vendorEmail: widget.vendorData['owner'] ?? '',
                       vendorType: widget.vendorType,
-                      // token: widget.token, // Make sure to add token parameter to VendorDetailPage
+                      token: widget.token, // Make sure to add token parameter to VendorDetailPage
                       vendorName: vendorName,
                       price: widget.vendorData['price']?? '',
                     ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +9,7 @@ class CustomerBookingPage extends StatefulWidget {
   final String vendorId;
   final String vendorEmail;
   final String vendorType;
-  final String token = "";
+  final String token; 
   final String vendorName;
   final String price;
 
@@ -16,7 +18,7 @@ class CustomerBookingPage extends StatefulWidget {
     required this.vendorId,
     required this.vendorEmail,
     required this.vendorType,
-    // required this.token,
+    required this.token,
     required this.vendorName,
     required this.price,
   }) : super(key: key);
@@ -42,6 +44,14 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
   }
 
   Future<void> _loadAvailableSlots() async {
+    print("datas haita");
+    print(widget.vendorEmail);
+    print(widget.vendorId);
+    print(widget.vendorType);
+    print(widget.vendorName);
+
+
+
     setState(() => _isLoading = true);
     try {
       final slots = await ApiVendorAvailability.getAvailableSlots(
@@ -54,6 +64,12 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           _availableSlots = slots.where((slot) => slot['status'] == 'Available').toList();
         });
       }
+      print("slots data at the deningining");
+      print(slots);
+      // slots['vendorId'] = widget.vendorId;
+      // slots['vendorEmail'] = widget.vendorEmail;
+      // slots['vendorType'] = widget.vendorType;
+      // slots['vendorName'] = widget.vendorName;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -72,121 +88,124 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
       appBar: AppBar(
         title: Text('Book ${widget.vendorName}'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Date range available for booking',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
+      body: SingleChildScrollView( // Add this wrapper
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Date range available for booking',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: _isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _availableSlots.length,
-                          itemBuilder: (context, index) {
-                            final slot = _availableSlots[index];
-                            return ListTile(
-                              dense: true,
-                              title: Text(
-                                '${DateFormat('MMM dd').format(DateTime.parse(slot['startDate']))} - ${DateFormat('MMM dd').format(DateTime.parse(slot['endDate']))}',
-                                style: TextStyle(fontSize: 14),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                  Expanded(
+                    child: _isLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : Container( // Add Container with fixed height
+                            height: 100,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _availableSlots.length,
+                              itemBuilder: (context, index) {
+                                final slot = _availableSlots[index];
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    '${DateFormat('MMM dd').format(DateTime.parse(slot['startDate']))} - ${DateFormat('MMM dd').format(DateTime.parse(slot['endDate']))}',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          TableCalendar(
-            firstDay: DateTime.now(),
-            lastDay: DateTime.now().add(Duration(days: 365)),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            rangeStartDay: _rangeStart,
-            rangeEndDay: _rangeEnd,
-            rangeSelectionMode: RangeSelectionMode.enforced,
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-                _rangeStart = null;
-                _rangeEnd = null;
-              });
-            },
-            onRangeSelected: (start, end, focusedDay) {
-              setState(() {
-                _selectedDay = null;
-                _rangeStart = start;
-                _focusedDay = focusedDay;
+            TableCalendar(
+              firstDay: DateTime.now(),
+              lastDay: DateTime.now().add(Duration(days: 365)),
+              focusedDay: _focusedDay,
+              calendarFormat: _calendarFormat,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              rangeStartDay: _rangeStart,
+              rangeEndDay: _rangeEnd,
+              rangeSelectionMode: RangeSelectionMode.enforced,
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                  _rangeStart = null;
+                  _rangeEnd = null;
+                });
+              },
+              onRangeSelected: (start, end, focusedDay) {
+                setState(() {
+                  _selectedDay = null;
+                  _rangeStart = start;
+                  _focusedDay = focusedDay;
 
-                if (start != null && end != null) {
-                  // Get the available date range from slots
-                  if (_availableSlots.isNotEmpty) {
-                    DateTime firstAvailable = DateTime.parse(_availableSlots.first['startDate']);
-                    DateTime lastAvailable = DateTime.parse(_availableSlots.last['endDate']);
+                  if (start != null && end != null) {
+                    // Get the available date range from slots
+                    if (_availableSlots.isNotEmpty) {
+                      DateTime firstAvailable = DateTime.parse(_availableSlots.first['startDate']);
+                      DateTime lastAvailable = DateTime.parse(_availableSlots.last['endDate']);
 
-                    // Validate start date
-                    if (start.isBefore(firstAvailable)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Booking is only available from ${DateFormat('MMM dd').format(firstAvailable)}'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      _rangeStart = firstAvailable;
-                      return;
-                    }
+                      // Validate start date
+                      if (start.isBefore(firstAvailable)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Booking is only available from ${DateFormat('MMM dd').format(firstAvailable)}'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        _rangeStart = firstAvailable;
+                        return;
+                      }
 
-                    // Validate end date
-                    if (end.isAfter(lastAvailable)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Booking is only available till ${DateFormat('MMM dd').format(lastAvailable)}'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      _rangeEnd = lastAvailable;
-                      return;
-                    }
+                      // Validate end date
+                      if (end.isAfter(lastAvailable)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Booking is only available till ${DateFormat('MMM dd').format(lastAvailable)}'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        _rangeEnd = lastAvailable;
+                        return;
+                      }
 
-                    // Existing duration validation
-                    final daysDifference = end.difference(start).inDays + 1;
-                    if (daysDifference < 1) {
-                      _rangeEnd = start;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Minimum booking duration is 1 day'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    } else if (daysDifference > 5) {
-                      _rangeEnd = start.add(Duration(days: 4));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Maximum booking duration is 5 days'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    } else {
-                      _rangeEnd = end;
+                      // Existing duration validation
+                      final daysDifference = end.difference(start).inDays + 1;
+                      if (daysDifference < 1) {
+                        _rangeEnd = start;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Minimum booking duration is 1 day'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      } else if (daysDifference > 5) {
+                        _rangeEnd = start.add(Duration(days: 4));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Maximum booking duration is 5 days'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      } else {
+                        _rangeEnd = end;
+                      }
                     }
                   }
-                } else {
-                  _rangeEnd = end;
-                }
+                
               });
             },
             onFormatChanged: (format) {
@@ -218,8 +237,11 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
             ),
           ),
           
-          Expanded(
+          // Replace Expanded with Container
+          Container(
+            padding: EdgeInsets.all(16.0),
             child: Column(
+              mainAxisSize: MainAxisSize.min, // Add this
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -262,7 +284,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   void _showBookingDialog() {
@@ -364,19 +387,19 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
   Future<void> _processBooking(Map<String, dynamic> slot) async {
     setState(() => _isLoading = true);
     try {
+      print("Booking data before sending: $slot");
       // Update the slot status to 'Booked'
-      final success = await ApiVendorAvailability.updateSlot(
+      final success = await ApiVendorAvailability.createBooking(
+        slot,
         widget.token,
-        slot['availabilityID'],
-        {
-          'startDate': slot['startDate'],
-          'endDate': slot['endDate'],
-          'status': 'Booked',
-          'category': widget.vendorType,
-        },
       );
 
-      if (success) {
+      // print(success.status);
+print("Booking data after sending: $success");
+print(success['status'].runtimeType);
+      if (success['status']==201) {
+        print("booking succeded");
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Booking confirmed successfully!'),
@@ -422,6 +445,11 @@ Map<String, dynamic>? _processBookingDetails(String guestsText) {
       'endDate': _rangeEnd.toString(),
       'guests': guests,
       'totalPrice': guests * int.parse(widget.price),
+      'vendorId': widget.vendorId,
+      'vendorEmail': widget.vendorEmail,
+      'eventType': widget.vendorType,
+      'vendorName': widget.vendorName,
+      'price': widget.price,
     };
   }
 }

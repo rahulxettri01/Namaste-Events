@@ -1,0 +1,2 @@
+E:/FATHER/Namaste-Events/fyp_namaste_events-main/android/app/.cxx/Debug/83fx4zd5/x86/CMakeFiles/edit_cache.dir
+E:/FATHER/Namaste-Events/fyp_namaste_events-main/android/app/.cxx/Debug/83fx4zd5/x86/CMakeFiles/rebuild_cache.dir

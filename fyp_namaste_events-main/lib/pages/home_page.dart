@@ -10,7 +10,11 @@ import 'package:fyp_namaste_events/pages/vendor_list_page.dart';
 import 'dart:math';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final String token;
+  const HomePage({Key? key, 
+  required this.token,
+  
+  }) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -317,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const VendorsPage(),
+                                builder: (context) =>  VendorsPage( token: widget.token,),
                               ),
                             );
                           },
@@ -384,6 +388,7 @@ class _HomePageState extends State<HomePage> {
                                       category: featuredCategories[index]
                                               ['title']
                                           .split('\n')[0],
+                                      token: widget.token,
                                     ),
                                   ),
                                 );
@@ -439,6 +444,7 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context) => VendorListPage(
                                   vendors: venues,
                                   category: 'Venue',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -472,6 +478,7 @@ class _HomePageState extends State<HomePage> {
                                   vendorData: filteredVenues[
                                       index], // Use filtered list
                                   vendorType: 'venue',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -581,6 +588,7 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context) => VendorListPage(
                                   vendors: photographers,
                                   category: 'Photographer',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -612,9 +620,11 @@ class _HomePageState extends State<HomePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => VendorDetailPage(
+
                                   vendorData: filteredPhotographers[
                                       index], // Update this line
                                   vendorType: 'photographer',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -723,6 +733,7 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context) => VendorListPage(
                                   vendors: decorations,
                                   category: 'Decorator',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -756,6 +767,7 @@ class _HomePageState extends State<HomePage> {
                                   vendorData: filteredDecorations[
                                       index], // Change this line
                                   vendorType: 'decorator',
+                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -855,7 +867,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-      bottomNavigationBar: BottomNavBar(),
+      bottomNavigationBar: BottomNavBar(token: widget.token,),
     );
   }
 }
@@ -867,6 +879,7 @@ Widget _buildHorizontalScrollWithButtons(
   dynamic Function(dynamic) imagesGetter,
   IconData fallbackIcon,
   String vendorType,
+  String token,
 ) {
   final textTheme = Theme.of(context).brightness == Brightness.dark
       ? TTextTheme.darkTextTheme
@@ -884,7 +897,7 @@ Widget _buildHorizontalScrollWithButtons(
           child: ListView.builder(
             controller: scrollController,
             scrollDirection: Axis.horizontal,
-            itemCount: items.length,
+            itemCount: items.length,  
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () {
@@ -895,6 +908,7 @@ Widget _buildHorizontalScrollWithButtons(
                       builder: (context) => VendorDetailPage(
                         vendorData: items[index],
                         vendorType: vendorType,
+                        token: token,
                       ),
                     ),
                   );

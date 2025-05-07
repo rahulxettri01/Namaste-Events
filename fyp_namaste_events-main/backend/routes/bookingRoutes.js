@@ -1,11 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { bookingModel } = require("../models/booking");
+const  {bookingModel} = require("../models/booking");
 const VerifyJWT = require("../middleware/VerifyJWT");
 
 // Create a new booking
-router.post("/create", async (req, res) => {
+router.post("/create", VerifyJWT, async (req, res) => {
+  console.log("hit at /api/bookings/create");
+  
   try {
+    console.log("req.body", req.body);
+    
     const booking = new bookingModel({
       userId: req.user.id,
       vendorId: req.body.vendorId,
@@ -28,8 +32,15 @@ router.post("/create", async (req, res) => {
     });
 
     const savedBooking = await booking.save();
-    res.status(201).json(savedBooking);
+
+    if (!savedBooking) {
+      return res.status(500).json({ error: "Failed to create booking" });
+    }
+
+    res.status(201).json({ message: "Booking created successfully", booking: savedBooking, status: 201});
   } catch (error) {
+    console.log("error at /api/bookings/create", error.message);
+    
     res.status(500).json({ error: error.message });
   }
 });

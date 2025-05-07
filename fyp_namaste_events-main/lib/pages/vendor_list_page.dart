@@ -7,11 +7,13 @@ import '../services/Api/api_vendor_availability.dart';
 class VendorListPage extends StatelessWidget {
   final List<dynamic> vendors;
   final String category;
+  final String token;
 
   const VendorListPage({
     Key? key,
     required this.vendors,
     required this.category,
+    required this.token,
   }) : super(key: key);
 
   Future<void> _checkAvailability(BuildContext context, Map<String, dynamic> vendor) async {
@@ -138,6 +140,7 @@ class VendorListPage extends StatelessWidget {
                               builder: (context) => VendorDetailPage(
                                 vendorData: vendor,
                                 vendorType: _getVendorType(),
+                                token: token,
                               ),
                             ),
                           );

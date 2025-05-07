@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema({
     userId: {
@@ -13,7 +13,7 @@ const bookingSchema = new mongoose.Schema({
     },
     inventoryId: {
         type: String,
-        required: true
+        // required: true
     },
     
     price: {
@@ -47,7 +47,7 @@ const bookingSchema = new mongoose.Schema({
     eventDetails: {
         eventType: {
             type: String,
-            enum: ['Venue', 'Decoration', 'Photography'],
+            // enum: ['Venue', 'Decoration', 'Photography'],
             required: true
         },
         startDate: {
@@ -60,7 +60,7 @@ const bookingSchema = new mongoose.Schema({
         },
         eventName: {
             type: String,
-            required: true
+            // required: true
         },
         eventDescription: {
             type: String,
@@ -77,5 +77,5 @@ const bookingSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const Booking = mongoose.model('Booking', bookingSchema);
-export default Booking;
+const bookingModel = mongoose.model('Bookings', bookingSchema);
+module.exports = {bookingModel};

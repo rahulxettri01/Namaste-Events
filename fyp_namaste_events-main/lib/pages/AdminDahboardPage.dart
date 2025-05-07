@@ -815,6 +815,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     builder: (context) => VendorListPage(
                       vendors: filteredVendors,
                       category: type,
+                      token: widget.token,
                     ),
                   ),
                 );

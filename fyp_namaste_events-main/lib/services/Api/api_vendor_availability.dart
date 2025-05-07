@@ -151,12 +151,15 @@ class ApiVendorAvailability {
 
     
 
-static Future<bool> createBooking(Map<String, dynamic> bookingData) async {
+static Future<dynamic> createBooking(Map<String, dynamic> bookingData, String token) async {
     try {
+      print("Booking data");
+      print(bookingData);
       final response = await http.post(
-        Uri.parse('${APIConstants.baseUrl}api/booking/create'),
+        Uri.parse('${APIConstants.baseUrl}api/bookings/create'),
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'vendorId': bookingData['vendorId'],
@@ -166,8 +169,8 @@ static Future<bool> createBooking(Map<String, dynamic> bookingData) async {
           'endDate': bookingData['endDate'],
           'eventName': bookingData['eventName'],
           'eventDescription': bookingData['eventDescription'],
-          'guestCount': bookingData['guestCount'],
-          'totalAmount': bookingData['totalAmount'],
+          'guestCount': bookingData['guests'],
+          'totalAmount': bookingData['totalPrice'],
         }),
       );
 
@@ -176,12 +179,16 @@ static Future<bool> createBooking(Map<String, dynamic> bookingData) async {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return responseData['success'] ?? false;
+        // print("Response data");
+        // print(responseData);
+        return responseData;
+      }else{
+      return null;
+
       }
-      return false;
     } catch (e) {
       print('Error creating booking: $e');
-      return false;
+      return null;
     }
   }
 

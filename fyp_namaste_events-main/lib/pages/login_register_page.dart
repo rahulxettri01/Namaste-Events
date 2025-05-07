@@ -149,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
               } else if (response["status"] == "verified") {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (context) =>  HomePage(token: newToken,)),
                 );
               }
             }
