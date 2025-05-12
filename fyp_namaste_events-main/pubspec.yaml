@@ -60,3 +60,8 @@ flutter:
     - assets/eventvenue.png
     - assets/food.png
     - assets/photography.png
+  # Remove these lines if they exist:
+  # firebase_core: ^x.x.x
+  # firebase_auth: ^x.x.x
+  # cloud_firestore: ^x.x.x
+  # firebase_storage: ^x.x.x
