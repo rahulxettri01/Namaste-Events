@@ -13,7 +13,7 @@ const {
 } = require("../Config/multerConfig");
 const { diskStorage } = require("multer");
 const VerifyJWT = require("../middleware/VerifyJWT");
-const { Ruleset } = require("firebase-admin/security-rules");
+// const { Ruleset } = require("firebase-admin/security-rules");
 const jwtExpiryMinute = 60;
 const {
   docImageModel,

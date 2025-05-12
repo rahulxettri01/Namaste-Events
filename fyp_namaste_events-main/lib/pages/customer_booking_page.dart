@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../services/Api/api_vendor_availability.dart';
+import 'package:khalti_flutter/khalti_flutter.dart';
+import 'package:khalti/khalti.dart' as khalti_core; // Add prefix here
+import '../utils/khalti_config.dart'; // Add this import
 
 class CustomerBookingPage extends StatefulWidget {
   final String vendorId;
   final String vendorEmail;
   final String vendorType;
-  final String token; 
+  final String token;
   final String vendorName;
   final String price;
 
@@ -50,8 +53,6 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
     print(widget.vendorType);
     print(widget.vendorName);
 
-
-
     setState(() => _isLoading = true);
     try {
       final slots = await ApiVendorAvailability.getAvailableSlots(
@@ -61,7 +62,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
 
       if (slots != null) {
         setState(() {
-          _availableSlots = slots.where((slot) => slot['status'] == 'Available').toList();
+          _availableSlots =
+              slots.where((slot) => slot['status'] == 'Available').toList();
         });
       }
       print("slots data at the deningining");
@@ -88,7 +90,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
       appBar: AppBar(
         title: Text('Book ${widget.vendorName}'),
       ),
-      body: SingleChildScrollView( // Add this wrapper
+      body: SingleChildScrollView(
+        // Add this wrapper
         child: Column(
           children: [
             Padding(
@@ -108,7 +111,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
                   Expanded(
                     child: _isLoading
                         ? Center(child: CircularProgressIndicator())
-                        : Container( // Add Container with fixed height
+                        : Container(
+                            // Add Container with fixed height
                             height: 100,
                             child: ListView.builder(
                               shrinkWrap: true,
@@ -155,14 +159,17 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
                   if (start != null && end != null) {
                     // Get the available date range from slots
                     if (_availableSlots.isNotEmpty) {
-                      DateTime firstAvailable = DateTime.parse(_availableSlots.first['startDate']);
-                      DateTime lastAvailable = DateTime.parse(_availableSlots.last['endDate']);
+                      DateTime firstAvailable =
+                          DateTime.parse(_availableSlots.first['startDate']);
+                      DateTime lastAvailable =
+                          DateTime.parse(_availableSlots.last['endDate']);
 
                       // Validate start date
                       if (start.isBefore(firstAvailable)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Booking is only available from ${DateFormat('MMM dd').format(firstAvailable)}'),
+                            content: Text(
+                                'Booking is only available from ${DateFormat('MMM dd').format(firstAvailable)}'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -174,7 +181,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
                       if (end.isAfter(lastAvailable)) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Booking is only available till ${DateFormat('MMM dd').format(lastAvailable)}'),
+                            content: Text(
+                                'Booking is only available till ${DateFormat('MMM dd').format(lastAvailable)}'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -205,159 +213,160 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
                       }
                     }
                   }
-                
-              });
-            },
-            onFormatChanged: (format) {
-              if (_calendarFormat != format) {
-                setState(() {
-                  _calendarFormat = format;
                 });
-              }
-            },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
-            },
-            calendarStyle: CalendarStyle(
-              selectedDecoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-                shape: BoxShape.circle,
+              },
+              onFormatChanged: (format) {
+                if (_calendarFormat != format) {
+                  setState(() {
+                    _calendarFormat = format;
+                  });
+                }
+              },
+              onPageChanged: (focusedDay) {
+                _focusedDay = focusedDay;
+              },
+              calendarStyle: CalendarStyle(
+                selectedDecoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  shape: BoxShape.circle,
+                ),
+                selectedTextStyle: const TextStyle(color: Colors.white),
+                rangeHighlightColor: Colors.green.withOpacity(0.2),
+                rangeStartDecoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                rangeEndDecoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+                withinRangeTextStyle: const TextStyle(color: Colors.black),
               ),
-              selectedTextStyle: const TextStyle(color: Colors.white),
-              rangeHighlightColor: Colors.green.withOpacity(0.2),
-              rangeStartDecoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-              ),
-              rangeEndDecoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-              ),
-              withinRangeTextStyle: const TextStyle(color: Colors.black),
             ),
-          ),
-          
-          // Replace Expanded with Container
-          Container(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // Add this
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Selected Date Range',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+
+            // Replace Expanded with Container
+            Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Add this
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Selected Date Range',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor,
+                          ),
                         ),
-                      ),
-                      if (_rangeStart != null && _rangeEnd != null)
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                '${DateFormat('MMM dd').format(_rangeStart!)} - ${DateFormat('MMM dd').format(_rangeEnd!)}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black87,
+                        if (_rangeStart != null && _rangeEnd != null)
+                          Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  '${DateFormat('MMM dd').format(_rangeStart!)} - ${DateFormat('MMM dd').format(_rangeEnd!)}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () => _showBookingDialog(),
-                              child: Text('Proceed with Booking'),
-                            ),
-                          ],
-                        ),
-                    ],
+                              SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () => _showBookingDialog(),
+                                child: Text('Proceed with Booking'),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-               
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   void _showBookingDialog() {
-      final TextEditingController guestsController = TextEditingController();
-      int basePrice = int.parse(widget.price);
-      int totalPrice = 0;
-  
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: Text('Booking Details'),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Start Date: ${DateFormat('MMM dd, yyyy').format(_rangeStart!)}'),
-                      SizedBox(height: 10),
-                      Text('End Date: ${DateFormat('MMM dd, yyyy').format(_rangeEnd!)}'),
-                      SizedBox(height: 10),
-                      Text('Base Price: Rs ${basePrice.toString()}'),
-                      SizedBox(height: 15),
-                      TextField(
-                        controller: guestsController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Number of Guests (minimum 25)',
-                          border: OutlineInputBorder(),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            int guests = int.tryParse(value) ?? 0;
-                            totalPrice = guests * basePrice;
-                          });
-                        },
+    final TextEditingController guestsController = TextEditingController();
+    int basePrice = int.parse(widget.price);
+    int totalPrice = 0;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Booking Details'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Start Date: ${DateFormat('MMM dd, yyyy').format(_rangeStart!)}'),
+                    SizedBox(height: 10),
+                    Text(
+                        'End Date: ${DateFormat('MMM dd, yyyy').format(_rangeEnd!)}'),
+                    SizedBox(height: 10),
+                    Text('Base Price: Rs ${basePrice.toString()}'),
+                    SizedBox(height: 15),
+                    TextField(
+                      controller: guestsController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Number of Guests (minimum 25)',
+                        border: OutlineInputBorder(),
                       ),
-                      SizedBox(height: 15),
-                      Text(
-                        'Total Price: Rs ${totalPrice.toString()}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      onChanged: (value) {
+                        setState(() {
+                          int guests = int.tryParse(value) ?? 0;
+                          totalPrice = guests * basePrice;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 15),
+                    Text(
+                      'Total Price: Rs ${totalPrice.toString()}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      final bookingDetails = _processBookingDetails(guestsController.text);
-                      if (bookingDetails != null) {
-                        Navigator.pop(context);
-                        _confirmBooking(bookingDetails);
-                      }
-                    },
-                    child: Text('Proceed'),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      );
-    }
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final bookingDetails =
+                        _processBookingDetails(guestsController.text);
+                    if (bookingDetails != null) {
+                      Navigator.pop(context);
+                      _confirmBooking(bookingDetails);
+                    }
+                  },
+                  child: Text('Proceed'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _confirmBooking(Map<String, dynamic> slot) {
     showDialog(
@@ -387,47 +396,102 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
   Future<void> _processBooking(Map<String, dynamic> slot) async {
     setState(() => _isLoading = true);
     try {
-      print("Booking data before sending: $slot");
-      // Update the slot status to 'Booked'
-      final success = await ApiVendorAvailability.createBooking(
+      final amountInPaisa = (slot['totalPrice'] * 100).toInt();
+
+      final config = KhaltiConfig.getPaymentConfig(
+        amount: amountInPaisa,
+        productIdentity: 'booking-${DateTime.now().millisecondsSinceEpoch}',
+        productName: '${widget.vendorType} Booking - ${widget.vendorName}',
+      );
+
+      await KhaltiScope.of(context).pay(
+        config: config,
+        preferences: KhaltiConfig.paymentPreferences,
+        onSuccess: (successModel) async {
+          _onPaymentSuccess(successModel, slot);
+        },
+        onFailure: (failureModel) {
+          _onPaymentFailure(failureModel);
+        },
+        onCancel: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment cancelled by user'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() => _isLoading = false);
+        },
+      );
+    } catch (e) {
+      print('Payment Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment initialization failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _onPaymentSuccess(
+      PaymentSuccessModel success, Map<String, dynamic> slot) async {
+    try {
+      // Add payment details to the slot
+      slot['paymentDetails'] = {
+        'token': success.token,
+        'amount': success.amount,
+        'mobile': success.mobile,
+        'productIdentity': success.productIdentity,
+        'productName': success.productName,
+        'paymentStatus': 'Completed',
+        'transactionDate': DateTime.now().toIso8601String(),
+      };
+
+      // Create booking with payment details
+      final bookingResponse = await ApiVendorAvailability.createBooking(
         slot,
         widget.token,
       );
 
-      // print(success.status);
-print("Booking data after sending: $success");
-print(success['status'].runtimeType);
-      if (success['status']==201) {
-        print("booking succeded");
-        
+      if (bookingResponse['status'] == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Booking confirmed successfully!'),
+            content: Text('Payment successful and booking confirmed!'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true); // Return to vendor detail page
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to confirm booking'),
-            backgroundColor: Colors.red,
+            content: Text(
+                'Payment successful but booking failed. Please contact support.'),
+            backgroundColor: Colors.orange,
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text('Error processing payment: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
-Map<String, dynamic>? _processBookingDetails(String guestsText) {
+  void _onPaymentFailure(PaymentFailureModel failure) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment failed: ${failure.message}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Map<String, dynamic>? _processBookingDetails(String guestsText) {
     int guests = int.tryParse(guestsText) ?? 0;
     if (guests < 25) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -438,7 +502,6 @@ Map<String, dynamic>? _processBookingDetails(String guestsText) {
       );
       return null;
     }
-
 
     return {
       'startDate': _rangeStart.toString(),
