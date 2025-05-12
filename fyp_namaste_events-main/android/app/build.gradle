@@ -1,7 +1,8 @@
 
 plugins {
     id "com.android.application"
-    id 'com.google.gms.google-services'
+    // Remove this line if it exists at the top:
+    // apply plugin: 'com.google.gms.google-services'
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
@@ -44,5 +45,14 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Remove these lines if they exist:
+    // implementation platform('com.google.firebase:firebase-bom:32.0.0')
+    // implementation 'com.google.firebase:firebase-analytics'
+    // implementation 'com.google.firebase:firebase-auth'
+    // implementation 'com.google.firebase:firebase-firestore'
+    // ... other dependencies
 }
 
