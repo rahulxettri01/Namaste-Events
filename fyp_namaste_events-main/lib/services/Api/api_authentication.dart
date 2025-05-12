@@ -414,6 +414,76 @@ class Api {
     }
   }
 
+  // Add these methods to the Api class
+
+    static Future<Map<String, dynamic>> getVendorProfile(String vendorId) async {
+      var url = Uri.parse("${APIConstants.baseUrl}auth/vendors/$vendorId");
+      String? token = await APIConstants.getToken();
+  
+      try {
+        final response = await http.get(
+          url,
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+        );
+  
+        if (response.statusCode == 200) {
+          return jsonDecode(response.body);
+        } else {
+          debugPrint("Vendor profile fetch error: ${response.statusCode}");
+          debugPrint("Response body: ${response.body}");
+          return {
+            "success": false,
+            "message": "Failed to fetch vendor profile: ${response.statusCode}"
+          };
+        }
+      } catch (e) {
+        debugPrint("Error fetching vendor profile: ${e.toString()}");
+        return {
+          "success": false,
+          "message": "Error fetching vendor profile: ${e.toString()}"
+        };
+      }
+    }
+  
+    static Future<Map<String, dynamic>> updateVendorProfile({
+      required String vendorId,
+      required Map<String, dynamic> vendorData,
+    }) async {
+      var url = Uri.parse("${APIConstants.baseUrl}auth/vendors/update/$vendorId");
+      String? token = await APIConstants.getToken();
+  
+      try {
+        final response = await http.put(
+          url,
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(vendorData),
+        );
+  
+        if (response.statusCode == 200) {
+          return jsonDecode(response.body);
+        } else {
+          debugPrint("Vendor profile update error: ${response.statusCode}");
+          debugPrint("Response body: ${response.body}");
+          return {
+            "success": false,
+            "message": "Failed to update vendor profile: ${response.statusCode}"
+          };
+        }
+      } catch (e) {
+        debugPrint("Error updating vendor profile: ${e.toString()}");
+        return {
+          "success": false,
+          "message": "Error updating vendor profile: ${e.toString()}"
+        };
+      }
+    }
+
   static Future<Map<String, dynamic>> updateUserProfile({
     required String userName,
     required String phone,
@@ -450,6 +520,47 @@ class Api {
     }
   }
 
+  // Fix the checkVendorEmail method with the correct endpoint
+    static Future<Map<String, dynamic>> checkVendorEmail(Map<String, String> data) async {
+      try {
+        print("Checking vendor email: ${data['email']}");
+        
+        // Update the endpoint path to include vendor/auth prefix
+        final response = await http.post(
+          Uri.parse('${APIConstants.baseUrl}vendor/auth/vendors/check-email'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': data['email'],
+          }),
+        );
+      
+        print("Vendor email check response status: ${response.statusCode}");
+        print("Vendor email check response body: ${response.body}");
+      
+        if (response.statusCode == 200) {
+          var responseData = jsonDecode(response.body);
+          return {
+            "success": true,
+            "exists": responseData['exists'] ?? false,
+            "email": data['email'],
+            "vendorId": responseData['vendorId'] ?? '',
+            "message": responseData['message'] ?? "Email check completed"
+          };
+        } else {
+          return {
+            "success": false,
+            "message": "Email check failed: ${response.statusCode}",
+          };
+        }
+      } catch (e) {
+        print("Exception in checkVendorEmail: ${e.toString()}");
+        return {
+          "success": false,
+          "message": "Error: ${e.toString()}",
+        };
+      }
+    }
+
   static Future<Map<String, dynamic>> checkValidEmail(
       Map<String, String> emailData) async {
     var url = Uri.parse("${APIConstants.baseUrl}auth/isValidMail");
@@ -484,14 +595,11 @@ class Api {
     required String userId,
     required String password,
   }) async {
-    var url = Uri.parse("${APIConstants.baseUrl}auth/users/reset-password");
-    String? token = await APIConstants.getToken();
-
     try {
       final response = await http.post(
-        url,
+        Uri.parse('${APIConstants.baseUrl}auth/users/reset-password'),
         headers: {
-          "Authorization": "Bearer $token",
+          "Authorization": "Bearer ${await APIConstants.getToken()}",
           "Content-Type": "application/json",
         },
         body: jsonEncode({
@@ -592,4 +700,249 @@ class Api {
       return [];
     }
   }
-} // End of Api class
+ // End of Api class
+
+// Add this method for vendor password change
+  static Future<Map<String, dynamic>> changeVendorPassword({
+    required String vendorId,
+    required String newPassword,
+    required String token, 
+    required String currentPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}auth/vendors/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'vendorId': vendorId,
+          'currentPassword': currentPassword, // Include current password for verification
+          'newPassword': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, ...jsonDecode(response.body)};
+      } else {
+        return {'success': false, ...jsonDecode(response.body)};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: ${e.toString()}'};
+    }
+  }
+
+  // Add this method for user password change
+  static Future<Map<String, dynamic>> changeUserPassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}auth/users/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      );
+
+      debugPrint("Change password response status: ${response.statusCode}");
+      
+      // Check if response is HTML (which happens with 404 errors)
+      if (response.body.trim().toLowerCase().startsWith('<!doctype html>')) {
+        return {
+          'success': false,
+          'message': 'Server Error: 404 Not Found. The endpoint could not be reached.',
+          'statusCode': response.statusCode
+        };
+      }
+      
+      // Try to parse JSON response
+      try {
+        final responseData = jsonDecode(response.body);
+        responseData['statusCode'] = response.statusCode;
+        
+        if (response.statusCode == 404) {
+          return {
+            'success': false,
+            'message': 'Server Error: 404 Not Found. The server endpoint could not be reached.',
+            'statusCode': 404
+          };
+        } else if (response.statusCode == 401) {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Authentication failed. Please log in again.',
+            'statusCode': 401
+          };
+        } else if (response.statusCode == 400) {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Invalid request. Please check your inputs.',
+            'statusCode': 400
+          };
+        } else if (response.statusCode != 200) {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Server error: ${response.statusCode}',
+            'statusCode': response.statusCode
+          };
+        }
+        
+        return responseData;
+      } catch (e) {
+        // JSON parsing error
+        return {
+          'success': false,
+          'message': 'Invalid response format. Server returned status code: ${response.statusCode}',
+          'statusCode': response.statusCode
+        };
+      }
+    } catch (e) {
+      debugPrint("Change password error: ${e.toString()}");
+      return {
+        'success': false,
+        'message': 'Connection error: ${e.toString()}',
+        'statusCode': 0
+      };
+    }
+  }
+
+// Add these methods to your Api class
+
+static Future<Map<String, dynamic>?> forgotVendorPassword(String email) async {
+  try {
+    print("Sending forgot password request for vendor email: $email");
+    
+    // Update the endpoint to match the one that has OTP generation implemented
+    final response = await http.post(
+      Uri.parse('${APIConstants.baseUrl}vendor/auth/vendor/forgot-password'),  // Changed to use the correct endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+      }),
+    );
+
+    print("Forgot vendor password response status: ${response.statusCode}");
+    print("Forgot vendor password response body: ${response.body}");
+
+    // Rest of the method remains the same
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      return {
+        'success': true, 
+        'vendorId': responseData['vendorId'] ?? '',
+        'message': responseData['message'] ?? "OTP sent to your email"
+      };
+    } else {
+      try {
+        var responseData = jsonDecode(response.body);
+        return {
+          'success': false, 
+          'message': responseData['message'] ?? "Failed to send OTP"
+        };
+      } catch (e) {
+        return {
+          'success': false, 
+          'message': "Failed to send OTP. Status code: ${response.statusCode}"
+        };
+      }
+    }
+  } catch (e) {
+    print("Exception in forgotVendorPassword: ${e.toString()}");
+    return {'success': false, 'message': 'Error: ${e.toString()}'};
+  }
+}
+
+static Future<Map<String, dynamic>?> verifyVendorOTP({
+  required String email,
+  required String otp,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${APIConstants.baseUrl}vendor/auth/verify-otp'),  // Make sure this matches your backend
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'otp': otp,
+      }),
+    );
+
+    print("Verify vendor OTP response status: ${response.statusCode}");
+    print("Verify vendor OTP response body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      return {
+        'success': true,
+        'vendorId': responseData['vendorId'] ?? '',
+        'token': responseData['token'] ?? '',
+        'message': responseData['message'] ?? "OTP verified successfully"
+      };
+    } else {
+      var responseData = jsonDecode(response.body);
+      return {
+        'success': false,
+        'message': responseData['message'] ?? "Failed to verify OTP"
+      };
+    }
+  } catch (e) {
+    print("Exception in verifyVendorOTP: ${e.toString()}");
+    return {'success': false, 'message': 'Error: ${e.toString()}'};
+  }
+}
+
+static Future<Map<String, dynamic>?> resetVendorPassword({
+  required String token,
+  required String vendorId,
+  required String newPassword,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('${APIConstants.baseUrl}vendor/auth/reset-password'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'vendorId': vendorId,
+        'newPassword': newPassword,
+      }),
+    );
+
+    debugPrint("Reset vendor password response status: ${response.statusCode}");
+    debugPrint("Reset vendor password response body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      return {
+        'success': true,
+        'message': responseData['message'] ?? "Password reset successfully"
+      };
+    } else {
+      try {
+        var responseData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ?? "Failed to reset password",
+          'statusCode': response.statusCode
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'message': 'Error processing server response',
+          'statusCode': response.statusCode
+        };
+      }
+    }
+  } catch (e) {
+    debugPrint("Reset vendor password error: ${e.toString()}");
+    return {'success': false, 'message': 'Error: ${e.toString()}'};
+  }
+}
+}

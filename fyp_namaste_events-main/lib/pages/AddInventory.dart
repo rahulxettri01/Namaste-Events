@@ -128,28 +128,46 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
       onTap: pickFiles,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey.shade300),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 5)],
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            const Text("Select Inventory Images",
-                style: TextStyle(fontSize: 16, color: Colors.black54)),
-            const SizedBox(height: 5),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: selectedFileNames
-                  .map((fileName) => Text(fileName,
-                      style:
-                          const TextStyle(fontSize: 14, color: Colors.black87)))
-                  .toList(),
+            Icon(Icons.upload_file, color: Colors.grey),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Select Inventory Images",
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                  ),
+                  SizedBox(height: 5),
+                  selectedFileNames.isEmpty
+                      ? Text(
+                          "No files selected",
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: selectedFileNames
+                              .map((fileName) => Padding(
+                                    padding: const EdgeInsets.only(top: 2.0),
+                                    child: Text(
+                                      fileName,
+                                      style: TextStyle(
+                                          fontSize: 14, color: Colors.black87),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                ],
+              ),
             ),
-            const Icon(Icons.upload_file, color: Colors.purple),
           ],
         ),
       ),
@@ -203,62 +221,36 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                    labelText: "Inventory Name", border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _descriptionController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                    labelText: "Description", border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                    labelText: "Price (\Rs)", border: OutlineInputBorder()),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _addressController,
-                decoration: InputDecoration(
-                    labelText: "Address", border: OutlineInputBorder()),
-              ),
+              _entryField("Inventory Name", _nameController),
+              SizedBox(height: 15),
+              _entryField("Description", _descriptionController, maxLines: 3),
+              SizedBox(height: 15),
+              _entryField("Price", _priceController, keyboardType: TextInputType.number),
+              SizedBox(height: 15),
+              _entryField("Address", _addressController),
               SizedBox(height: 20),
               Text("Accommodation",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Column(
                 children: accommodations.asMap().entries.map((entry) {
                   int index = entry.key;
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          onChanged: (value) =>
-                              _updateAccommodation(index, "type", value),
-                          decoration: InputDecoration(
-                              labelText: "Type", border: OutlineInputBorder()),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 10.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _accommodationField("Type", index, "type"),
                         ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          onChanged: (value) =>
-                              _updateAccommodation(index, "details", value),
-                          decoration: InputDecoration(
-                              labelText: "Details",
-                              border: OutlineInputBorder()),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: _accommodationField("Details", index, "details"),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.remove_circle, color: Colors.red),
-                        onPressed: () => _removeAccommodation(index),
-                      )
-                    ],
+                        IconButton(
+                          icon: Icon(Icons.remove_circle, color: Colors.red),
+                          onPressed: () => _removeAccommodation(index),
+                        )
+                      ],
+                    ),
                   );
                 }).toList(),
               ),
@@ -266,7 +258,7 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  icon: Icon(Icons.add_circle, color: Colors.blue, size: 30),
+                  icon: Icon(Icons.add_circle, color: Colors.black, size: 30),
                   onPressed: _addAccommodationField,
                 ),
               ),
@@ -277,13 +269,104 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _addInventory,
-                  child: Text(isUploading ? "Uploading..." : "Add Inventory",
-                      style: TextStyle(fontSize: 16, color: Colors.white)),
+                  onPressed: isUploading ? null : _addInventory,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: Text(
+                    isUploading ? "Uploading..." : "Add Inventory",
+                    style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // Custom text field widget matching SignUpPage style
+  Widget _entryField(String title, TextEditingController controller, 
+      {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            labelText: title,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            fillColor: Colors.white,
+            filled: true,
+            prefixIcon: title == "Price" 
+                ? Container(
+                    width: 24,
+                    alignment: Alignment.center,
+                    child: Text(
+                      "रू",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                  
+                : Icon(
+                    title == "Inventory Name" 
+                        ? Icons.inventory
+                        : title == "Description"
+                            ? Icons.description
+                            : title == "Address"
+                                ? Icons.location_on
+                                : Icons.text_fields,
+                    color: Colors.grey,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Custom accommodation field widget
+  Widget _accommodationField(String label, int index, String field) {
+    return TextField(
+      onChanged: (value) => _updateAccommodation(index, field, value),
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15.0),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15.0),
+          borderSide: BorderSide(color: Colors.black),
+        ),
+        fillColor: Colors.white,
+        filled: true,
+        prefixIcon: Icon(
+          field == "type" ? Icons.category : Icons.info_outline,
+          color: Colors.grey,
         ),
       ),
     );

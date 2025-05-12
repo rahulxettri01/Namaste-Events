@@ -3,7 +3,7 @@ const router = express.Router();
 const http = require("http");
 const axios = require("axios");
 const { vendorModel } = require("../models/vendor");
-const { connectInventoryDB } = require("../Config/DBconfig");
+const { connectInventoryDB, connectVendorDB } = require("../Config/DBconfig");
 const encrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const {
@@ -173,6 +173,8 @@ router.post("/update_vendor_status", VerifyJWT, (req, res) => {
 });
 // GET API to fetch verification images for a vendor
 router.post("/get_verification_images", VerifyJWT, async (req, res) => {
+  console.log("hit at /vendor/auth/get_verification_images");
+  
   const { email, type } = req.body;
 
   if (!email) {
@@ -228,12 +230,13 @@ router.post("/get_verification_images", VerifyJWT, async (req, res) => {
     // Transform images to include full URLs
     const transformedImages = images.map((img) => {
       // Determine the correct path based on image type
-      let imagePath = "vendor";
-      if (type === "inventory") {
-        imagePath = "uploads/inventory";
-      } else if (type === "venue" || type === "decoration") {
-        imagePath = type;
-      }
+      // let imagePath = "vendor";
+      let imagePath = img.filePath;
+      // if (type === "inventory") {
+      //   imagePath = "uploads/inventory";
+      // } else if (type === "venue" || type === "decoration") {
+      //   imagePath = type;
+      // }
 
       return {
         ...img.toObject(),
@@ -573,5 +576,327 @@ router.post("/get_inventory_images", VerifyJWT, async (req, res) => {
     });
   }
 });
+// Route for vendor forgot password
+router.post("/vendors/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Check if vendor exists
+    const vendor = await vendorModel.findOne({ email });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found with this email"
+      });
+    }
+    
+    // Generate OTP and send email
+    // Your OTP generation and email sending logic here
+    
+    return res.status(200).json({
+      success: true,
+      vendorId: vendor._id,
+      message: "OTP sent to your email"
+    });
+  } catch (error) {
+    console.error("Error in forgot password:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+// Forgot password - check email and send OTP
+router.post("/vendor/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required"
+    });
+  }
 
+  try {
+    let vendor = null;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findOne({ email: email });
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found"
+      });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date();
+    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP valid for 10 minutes
+
+    // Save OTP to vendor record
+    await connectInventoryDB(async () => {
+      await vendorModel.findByIdAndUpdate(vendor._id, {
+        resetOTP: otp,
+        resetOTPExpiry: otpExpiry
+      });
+    });
+
+    // Send OTP via email
+    try {
+      await sendOTPEmail(email, otp, "Vendor Password Reset");
+      console.log(`OTP sent to ${email}: ${otp}`);
+    } catch (emailErr) {
+      console.error("Error sending email:", emailErr);
+      // Continue even if email fails
+    }
+
+    return res.status(200).json({
+      success: true,
+      vendorId: vendor._id,
+      message: "OTP sent to your email",
+      // Remove this in production
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+    });
+  } catch (err) {
+    console.error("Error in forgot password:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while processing request"
+    });
+  }
+});
+
+// Verify OTP
+router.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and OTP are required"
+    });
+  }
+
+  try {
+    let vendor = null;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findOne({ email: email });
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found"
+      });
+    }
+
+    // Check if OTP is valid and not expired
+    if (vendor.resetOTP !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP"
+      });
+    }
+
+    const now = new Date();
+    if (now > vendor.resetOTPExpiry) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired"
+      });
+    }
+
+    // Generate a reset token
+    const resetToken = jwt.sign(
+      { id: vendor._id, purpose: 'reset_password' },
+      'SECRET',
+      { expiresIn: '15m' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      vendorId: vendor._id,
+      token: resetToken,
+      message: "OTP verified successfully"
+    });
+  } catch (err) {
+    console.error("Error verifying OTP:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while verifying OTP"
+    });
+  }
+});
+
+// Reset password
+router.post("/reset-password", async (req, res) => {
+  const { vendorId, newPassword } = req.body;
+  
+  if (!vendorId || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Vendor ID and new password are required"
+    });
+  }
+
+  try {
+    // Verify the token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token is required"
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let decoded;
+    
+    try {
+      decoded = jwt.verify(token, 'SECRET');
+      
+      // Check if token is for password reset and matches the vendor ID
+      if (decoded.purpose !== 'reset_password' || decoded.id !== vendorId) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid or expired token"
+        });
+      }
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token"
+      });
+    }
+
+    // Hash the new password
+    const salt = await encrypt.genSalt(10);
+    const hashedPassword = await encrypt.hash(newPassword, salt);
+
+    // Update the password and clear reset fields
+    let vendor = null;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findByIdAndUpdate(
+        vendorId,
+        {
+          password: hashedPassword,
+          resetOTP: null,
+          resetOTPExpiry: null
+        },
+        { new: true }
+      );
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully"
+    });
+  } catch (err) {
+    console.error("Error resetting password:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while resetting password"
+    });
+  }
+});
+
+// Check if vendor email exists
+router.post("/vendors/check-email", async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required"
+    });
+  }
+
+  try {
+    let vendor = null;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findOne({ email: email });
+    });
+
+    if (vendor) {
+      return res.status(200).json({
+        success: true,
+        exists: true,
+        vendorId: vendor._id,
+        message: "Vendor found"
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        exists: false,
+        message: "Vendor not found"
+      });
+    }
+  } catch (err) {
+    console.error("Error checking vendor email:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while checking email"
+    });
+  }
+});
+
+// Keep the existing /reset-password endpoint for backward compatibility
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { vendorId, newPassword } = req.body;
+    
+    if (!vendorId || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor ID and new password are required"
+      });
+    }
+    
+    // Use connectInventoryDB instead of connectVendorDB if that's what you have
+    await connectInventoryDB(async () => {
+      // Find the vendor
+      const vendor = await vendorModel.findById(vendorId);
+      
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor not found"
+        });
+      }
+      
+      // Hash the new password
+      const salt = await encrypt.genSalt(10);
+      const hashedPassword = await encrypt.hash(newPassword, salt);
+      
+      // Update the password
+      vendor.password = hashedPassword;
+      await vendor.save();
+      
+      return res.status(200).json({
+        success: true,
+        message: "Password reset successfully"
+      });
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error resetting password: " + error.message
+    });
+  }
+});
+
+// Add this near the top of your file with other imports
+const { sendOTPEmail } = require('../utils/emailService');
+
+// At the end of your VendorAuthentication.js file, add:
 module.exports = router;

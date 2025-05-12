@@ -105,9 +105,26 @@ class _SignUpPageState extends State<SignUpPage> {
       "phone": controllerPhone.text,
       "password": controllerPassword.text,
       "role": selectedRole,
-      "vendorType": selectedRole == "Admin" ? selectedVendorType : null,
-      "category": selectedRole == "Admin" ? selectedVendorType : null,
     };
+    
+    // Add vendor-specific data if the role is Vendor
+    if (selectedRole == "Vendor") {
+      data["vendorType"] = selectedVendorType;
+      data["category"] = selectedVendorType;
+      
+      // Create a vendor model to store locally if needed
+      Map<String, dynamic> vendorData = {
+        "userName": controllerName.text,
+        "email": controllerEmail.text,
+        "phone": controllerPhone.text,
+        "vendorType": selectedVendorType,
+        "category": selectedVendorType,
+      };
+      
+      // Save vendor data to local storage or state management
+      // This could be implemented using shared_preferences or another storage method
+      print("Saving vendor data: $vendorData");
+    }
 
     try {
       // Call the API and handle the response
@@ -275,7 +292,7 @@ class _SignUpPageState extends State<SignUpPage> {
           color: Colors.grey,
         ),
       ),
-      items: ['User', 'Admin'].map((String value) {
+      items: ['User', 'Vendor'].map((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value),
@@ -285,13 +302,19 @@ class _SignUpPageState extends State<SignUpPage> {
         setState(() {
           selectedRole = newValue;
           selectedVendorType = null;
+          
+          // If vendor is selected, prepare vendor model data
+          if (selectedRole == "Vendor") {
+            // This will be used when submitting the form
+            print("Vendor role selected - will save as VendorModel");
+          }
         });
       },
     );
   }
 
   Widget _vendorTypeDropdown() {
-    return selectedRole == "Admin"
+    return selectedRole == "Vendor"
         ? DropdownButtonFormField<String>(
             value: selectedVendorType,
             decoration: InputDecoration(

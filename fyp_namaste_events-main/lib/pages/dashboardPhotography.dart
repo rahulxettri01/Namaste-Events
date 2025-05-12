@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fyp_namaste_events/pages/AddInventory.dart';
+import 'package:fyp_namaste_events/pages/ChangePasswordPage.dart';
 import 'package:fyp_namaste_events/pages/VendorAvailabilityPage.dart';
+import 'package:fyp_namaste_events/pages/VendorProfilePage.dart';
 import 'package:fyp_namaste_events/pages/login_register_page.dart';
 import 'package:fyp_namaste_events/pages/pending_req_vendor.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -26,6 +28,8 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
   List<dynamic> inventoryList = [];
   bool isLoading = true;
 
+  String? profileImageUrl; // Add this line to store profile image URL
+
   @override
   void initState() {
     super.initState();
@@ -46,13 +50,14 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
     }
     _decodeToken();
     _fetchInventory();
+    _fetchVendorProfile(); // Add this line to fetch profile image
   }
 
   void _decodeToken() {
     try {
       Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
-      userStatus = jwtDecodedToken['status'] ?? 'Unknown';
-      vendorName = jwtDecodedToken['vendorName'] ?? 'Unknown Vendor';
+       userStatus = jwtDecodedToken['status'] ?? 'Unknown';
+    vendorName = jwtDecodedToken['email'] ?? 'Unknown Vendor';
     } catch (e) {
       userStatus = 'Unknown';
       vendorName = 'Unknown Vendor';
@@ -164,6 +169,24 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
       case 'Dashboard':
         break;
       case 'Profile':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VendorProfilePage(
+              vendorId: jwtde['id'],
+              token: widget.token,
+            ),
+          ),
+        );
+        break;
+      case 'ChangePassword':
+        // Navigate to change password page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChangePasswordPage(token: widget.token),
+          ),
+        );
         break;
       case 'Settings':
         break;
@@ -194,6 +217,42 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
         break;
       default:
         break;
+    }
+  }
+
+  // Modified method to fetch vendor profile including profile image
+  Future<void> _fetchVendorProfile() async {
+    try {
+      // Debug the API call
+      print("Fetching profile for vendor ID: ${jwtde['id']}");
+      
+      final response = await Api.getVendorProfile(jwtde['id']);
+      
+      // Debug the response
+      print("Vendor profile response: ${json.encode(response)}");
+      
+      if (response['success'] == true) {
+        final vendor = response['vendor'] ?? {};
+        
+        // Debug the vendor data
+        print("Vendor data: ${json.encode(vendor)}");
+        
+        // Print all keys in the vendor object to help identify the correct field
+        print("All vendor keys: ${vendor.keys.toList()}");
+        
+        setState(() {
+          // Update vendor name if available
+          if (vendor['vendorName'] != null && vendor['vendorName'].toString().isNotEmpty) {
+            vendorName = vendor['vendorName'];
+          } else if (vendor['businessName'] != null && vendor['businessName'].toString().isNotEmpty) {
+            vendorName = vendor['businessName'];
+          }
+        });
+      } else {
+        print("Failed to fetch vendor profile: ${response['message']}");
+      }
+    } catch (e) {
+      print("Error fetching vendor profile: ${e.toString()}");
     }
   }
 
@@ -283,11 +342,14 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             UserAccountsDrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.black,
+              ),
               accountName: Text(vendorName),
               accountEmail: Text('Status: $userStatus'),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 50),
+                child: Icon(Icons.person, size: 50, color: Colors.black),
               ),
             ),
             ListTile(
@@ -295,6 +357,20 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
               title: Text('Dashboard Home'),
               onTap: () {
                 _navigateToPage('Dashboard');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.person),
+              title: Text('Profile'),
+              onTap: () {
+                _navigateToPage('Profile');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.lock),
+              title: Text('Change Password'),
+              onTap: () {
+                _navigateToPage('ChangePassword');
               },
             ),
             ListTile(
@@ -435,93 +511,115 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
     }
   }
 
+  // Custom text field widget matching AddInventory style
+  Widget _entryField(String title, TextEditingController controller, 
+      {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            labelText: title,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: BorderSide(color: Colors.black),
+            ),
+            fillColor: Colors.white,
+            filled: true,
+            prefixIcon: title == "Price" 
+                ? Container(
+                    width: 24,
+                    alignment: Alignment.center,
+                    child: Text(
+                      "रू",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    title == "Photography Name" 
+                        ? Icons.camera_alt
+                        : title == "Description"
+                            ? Icons.description
+                            : title == "Type"
+                                ? Icons.category
+                                : Icons.text_fields,
+                    color: Colors.grey,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Edit Photography Item'),
-      ),
+      appBar: AppBar(title: Text('Edit Photography Item')),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Photography Name',
-                        border: OutlineInputBorder(),
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _entryField("Photography Name", _nameController),
+                      SizedBox(height: 15),
+                      _entryField("Description", _descriptionController, maxLines: 3),
+                      SizedBox(height: 15),
+                      _entryField("Price", _priceController, keyboardType: TextInputType.number),
+                      SizedBox(height: 15),
+                      _entryField("Type", _typeController),
+                      SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _updateInventory,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            padding: EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: Text(
+                            _isLoading ? "Updating..." : "Update Photography",
+                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a name';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _priceController,
-                      decoration: InputDecoration(
-                        labelText: 'Price',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a price';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _typeController,
-                      decoration: InputDecoration(
-                        labelText: 'Type',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a type';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _updateInventory,
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: Text(
-                        'Update Inventory',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
     );
   }
 }
+
+// Add this method to check if an image exists at a URL
+  Future<bool> _checkImageExists(String url) async {
+    try {
+      final response = await http.head(Uri.parse(url));
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      print("Error checking image existence: $e");
+      return false;
+    }
+  }
