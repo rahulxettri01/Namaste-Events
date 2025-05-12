@@ -13,6 +13,7 @@ import 'package:fyp_namaste_events/pages/AdminDahboardPage.dart';
 import 'otp/VerifyOTPPage.dart';
 import 'otp/ForgotPasswordOTPPage.dart';
 import 'package:fyp_namaste_events/utils/validator.dart';
+import 'package:fyp_namaste_events/pages/VendorForgotPasswordOTPPage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -123,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
             );
 
             prefs.setString("FrontToken", newToken);
-            if (role == "Admin") {
+            if (role == "Vendor") {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
@@ -149,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
               } else if (response["status"] == "verified") {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) =>  HomePage(token: newToken,)),
+                  MaterialPageRoute(builder: (context) => const HomePage()),
                 );
               }
             }
@@ -269,7 +270,7 @@ class _LoginPageState extends State<LoginPage> {
           color: Colors.grey,
         ),
       ),
-      items: ['User', 'Admin', 'Super Admin'].map((String value) {
+      items: ['User', 'Vendor', 'Super Admin'].map((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value),
@@ -346,7 +347,8 @@ class _LoginPageState extends State<LoginPage> {
   void _showForgotPasswordDialog() {
     final TextEditingController emailController = TextEditingController();
     bool isLoading = false;
-    String? selectedResetRole; // Add this variable for role selection
+    String? selectedResetRole;
+    String? errorText;
 
     showDialog(
       context: context,
@@ -375,6 +377,7 @@ class _LoginPageState extends State<LoginPage> {
                     fillColor: Colors.white,
                     filled: true,
                     prefixIcon: const Icon(Icons.email),
+                    errorText: errorText,
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -391,7 +394,7 @@ class _LoginPageState extends State<LoginPage> {
                     filled: true,
                     prefixIcon: const Icon(Icons.person_outline),
                   ),
-                  items: ['User', 'Admin'].map((String value) {
+                  items: ['User', 'Vendor'].map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -400,6 +403,7 @@ class _LoginPageState extends State<LoginPage> {
                   onChanged: (String? newValue) {
                     setState(() {
                       selectedResetRole = newValue;
+                      errorText = null;
                     });
                   },
                 ),
@@ -427,84 +431,105 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: isLoading
                     ? null
                     : () async {
-                        if (emailController.text.isNotEmpty &&
-                            selectedResetRole != null) {
-                          // Show loading indicator
+                        // Validate inputs
+                        if (emailController.text.isEmpty) {
                           setState(() {
-                            isLoading = true;
+                            errorText = "Please enter your email address";
                           });
+                          return;
+                        }
+                        
+                        if (selectedResetRole == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please select a role"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
 
-                          Map<String, String> emailData = {
-                            "email": emailController.text,
-                            "role": selectedResetRole!,
-                          };
+                        // Show loading indicator
+                        setState(() {
+                          isLoading = true;
+                          errorText = null;
+                        });
 
-                          try {
-                            var response = await Api.checkValidEmail(emailData);
-                            print(response);
-                            // Check if email is valid
-                            if (response["status"] == "success") {
-                              print("resssssspoonsond");
-                              print(response["email"]);
-                              print(response["userId"]);
-                              // Email is valid, continue with password reset flow
+                        Map<String, String> emailData = {
+                          "email": emailController.text,
+                          "role": selectedResetRole!,
+                        };
+
+                        // In the _showForgotPasswordDialog method, update the response handling section:
+                        try {
+                          // Call different API methods based on role
+                          var response;
+                          if (selectedResetRole == "Vendor") {
+                            // First check if vendor email exists
+                            response = await Api.checkVendorEmail(emailData);
+                            print("Vendor email check response: $response");
+                            
+                            if (response["success"] == true && response["exists"] == true) {
+                              // If email exists, send OTP
+                              final forgotResult = await Api.forgotVendorPassword(emailController.text);
+                              print("Forgot vendor password response: $forgotResult");
+                              
+                              if (forgotResult != null && forgotResult["success"] == true) {
+                                Navigator.of(context).pop();
+                                
+                                // Navigate to vendor OTP page
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => VendorForgotPasswordOTPPage(
+                                      email: emailController.text,
+                                      vendorId: forgotResult["vendorId"] ?? response["vendorId"] ?? '',
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                setState(() {
+                                  isLoading = false;
+                                  errorText = forgotResult?["message"] ?? "Failed to send OTP. Please try again.";
+                                });
+                              }
+                            } else {
                               setState(() {
                                 isLoading = false;
+                                errorText = "Email not found or invalid";
                               });
+                            }
+                          } else {
+                            // User password reset flow
+                            response = await Api.checkValidEmail(emailData);
+                            
+                            setState(() {
+                              isLoading = false;
+                            });
+                            
+                            if (response["status"] == "success") {
                               Navigator.of(context).pop();
+                              
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ForgotPasswordOTPPage(
                                     email: response["email"],
-                                    userId: response[
-                                        "userId"], // Placeholder user ID
+                                    userId: response["userId"],
                                   ),
                                 ),
                               );
                             } else {
-                              // Show error message from response
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(response?["message"] ??
-                                      "Invalid email address"),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
+                              setState(() {
+                                errorText = response["message"] ?? "Email not found or invalid";
+                              });
                             }
-                          } catch (e) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    "Error checking email: ${e.toString()}"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
                           }
-
-                          // Hide dialog and navigate to OTP verification page
-                          // Navigator.of(context).pop();
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) => ForgotPasswordOTPPage(
-                          //       email: emailController.text,
-                          //       userId: "123", // Placeholder user ID
-                          //     ),
-                          //   ),
-                          // );
-                        } else {
-                          // Show error for empty email
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please enter your email address"),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                        } catch (e) {
+                          setState(() {
+                            isLoading = false;
+                            errorText = "Error: ${e.toString()}";
+                          });
                         }
                       },
                 style: ElevatedButton.styleFrom(

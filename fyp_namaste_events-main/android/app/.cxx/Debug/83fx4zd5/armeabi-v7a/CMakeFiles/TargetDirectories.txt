@@ -1,2 +1,0 @@
-E:/FATHER/Namaste-Events/fyp_namaste_events-main/android/app/.cxx/Debug/83fx4zd5/armeabi-v7a/CMakeFiles/edit_cache.dir
-E:/FATHER/Namaste-Events/fyp_namaste_events-main/android/app/.cxx/Debug/83fx4zd5/armeabi-v7a/CMakeFiles/rebuild_cache.dir

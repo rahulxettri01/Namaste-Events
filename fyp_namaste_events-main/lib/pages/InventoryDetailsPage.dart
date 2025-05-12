@@ -276,7 +276,7 @@ class _InventoryDetailsPageState extends State<InventoryDetailsPage> {
   Future<void> getImageFiles(folderName) async {
     try {
       final response = await http.post(
-        Uri.parse('${APIConstants.baseUrl}vendor/get_inventory_files'),
+        Uri.parse('${APIConstants.baseUrl}vendor/auth/get_inventory_files'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
@@ -316,7 +316,7 @@ class _InventoryDetailsPageState extends State<InventoryDetailsPage> {
       print("email: $email");
       print("type: $type");
       final response = await http.post(
-        Uri.parse('${APIConstants.baseUrl}vendor/get_verification_images'),
+        Uri.parse('${APIConstants.baseUrl}vendor/auth/get_verification_images'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',

@@ -64,7 +64,7 @@ router.post("/sign_up", async (req, res) => {
       const passwordEncrypted = await encrypt.hash(udata.password, salt);
       console.log("suc", passwordEncrypted);
       console.log("rol", udata.role);
-      if (udata.role == "Admin") {
+      if (udata.role == "Vendor") {
         let newVendor;
         let vendorType;
         newVendor = new vendorModel({
@@ -212,7 +212,9 @@ router.post("/log_in", async (req, res) => {
   console.log("Endpoint hit", udata);
 
   let existEmail = null;
-  if (udata.role == "Admin") {
+  if (udata.role == "Vendor") {
+    console.log("vend");
+    
     await connectInventoryDB(async () => {
       existEmail = await vendorModel.findOne({ email: udata.email });
     });
@@ -269,7 +271,14 @@ router.post("/log_in", async (req, res) => {
           email: existEmail.email,
           token: token,
         });
-      } else if (existEmail.role == "Admin") {
+      } else if (existEmail.role == "Vendor") {
+        console.log("c pas V");
+        return res.status(200).send({
+          status_code: 200,
+          message: "Vendor logged in successfully",
+          role: existEmail.role,
+          token: token,
+        });
         console.log("c pas A");
         return res.status(200).send({
           status_code: 200,
@@ -294,7 +303,145 @@ router.post("/log_in", async (req, res) => {
   }
 });
 
-// Add this route after your existing routes
+// Add these routes after your existing routes
+
+// Get vendor profile by ID
+router.get("/vendors/:vendorId", async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token required",
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, "SECRET");
+
+    // Fetch vendor data
+    let vendor;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findById(vendorId);
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found",
+      });
+    }
+
+    // Return vendor profile data
+    res.status(200).json({
+      success: true,
+      vendor: {
+        _id: vendor._id,
+        vendorName: vendor.vendorName,
+        email: vendor.email,
+        phone: vendor.phone,
+        address: vendor.address,
+        businessName: vendor.businessName,
+        vendorType: vendor.category,
+        status: vendor.status,
+        isVerified: vendor.isVerified,
+        createdAt: vendor.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Vendor profile fetch error:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error fetching vendor profile: " + error.message,
+    });
+  }
+});
+
+// Update vendor profile
+router.put("/vendors/update/:vendorId", async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token required",
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, "SECRET");
+    
+    // Check if the user is authorized to update this vendor
+    if (decoded.id !== vendorId && decoded.role !== "super admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized to update this vendor profile",
+      });
+    }
+
+    const updateData = {
+      vendorName: req.body.vendorName,
+      phone: req.body.phone,
+      address: req.body.address,
+      businessName: req.body.businessName,
+    };
+
+    // Update vendor data
+    let updatedVendor;
+    await connectInventoryDB(async () => {
+      updatedVendor = await vendorModel.findByIdAndUpdate(
+        vendorId,
+        updateData,
+        { new: true }
+      );
+    });
+
+    if (!updatedVendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found",
+      });
+    }
+
+    // Return updated vendor data
+    res.status(200).json({
+      success: true,
+      message: "Vendor profile updated successfully",
+      vendor: {
+        _id: updatedVendor._id,
+        vendorName: updatedVendor.vendorName,
+        email: updatedVendor.email,
+        phone: updatedVendor.phone,
+        address: updatedVendor.address,
+        businessName: updatedVendor.businessName,
+        vendorType: updatedVendor.category,
+      },
+    });
+  } catch (error) {
+    console.error("Vendor profile update error:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error updating vendor profile: " + error.message,
+    });
+  }
+});
+
 router.get("/users/profile", async (req, res) => {
   try {
     // Get token from Authorization header
@@ -570,6 +717,160 @@ router.post("/reset-password", async (req, res) => {
     res.status(500).json({
       status_code: 500,
       message: "Error resetting password: " + error.message,
+    });
+  }
+});
+// Add this route for vendor password change
+router.post("/vendors/change-password", async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token required",
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, "SECRET");
+    const vendorId = decoded.id;
+    
+    if (!vendorId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    // Get vendor from database
+    let vendor;
+    await connectInventoryDB(async () => {
+      vendor = await vendorModel.findById(vendorId);
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found",
+      });
+    }
+
+    // Verify current password
+    const isPasswordCorrect = await encrypt.compare(currentPassword, vendor.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const salt = await encrypt.genSalt(10);
+    const hashedPassword = await encrypt.hash(newPassword, salt);
+
+    // Update password
+    await connectInventoryDB(async () => {
+      await vendorModel.findByIdAndUpdate(
+        vendorId,
+        { password: hashedPassword },
+        { new: true }
+      );
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error changing password: " + error.message,
+    });
+  }
+});
+// Add this route for user password change
+router.post("/users/change-password", async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization token required",
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, "SECRET");
+    const userId = decoded.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    // Get user from database
+    let user;
+    await connectUserDB(async () => {
+      user = await userModel.findById(userId);
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isPasswordCorrect = await encrypt.compare(currentPassword, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const salt = await encrypt.genSalt(10);
+    const hashedPassword = await encrypt.hash(newPassword, salt);
+
+    // Update password
+    await connectUserDB(async () => {
+      await userModel.findByIdAndUpdate(
+        userId,
+        { password: hashedPassword },
+        { new: true }
+      );
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Error changing password: " + error.message,
     });
   }
 });

@@ -1,6 +1,5 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:fyp_namaste_events/pages/customer_booking_page.dart';
 import 'package:fyp_namaste_events/utils/theme/custom_themes/text_theme.dart';
 // Make sure these packages are added to your pubspec.yaml
 
@@ -9,13 +8,11 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class VendorDetailPage extends StatefulWidget {
   final dynamic vendorData;
   final String vendorType;
-  final String token;
 
   const VendorDetailPage({
     Key? key,
     required this.vendorData,
     required this.vendorType,
-    required this.token,
   }) : super(key: key);
 
   @override
@@ -35,9 +32,6 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
 
     // Get vendor name based on type
     String vendorName = '';
-    String vendorEmail =  widget.vendorData['owner'] ?? "";
-    print("vendor data");
-    print(widget.vendorData);
     if (widget.vendorType == 'venue') {
       vendorName = widget.vendorData['venueName'] ?? 'Venue';
     } else if (widget.vendorType == 'photographer') {
@@ -239,7 +233,7 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Book ${widget.vendorType.capitalize()}'),
-          content: Text('Would you like to check availability for $vendorName?'),
+          content: Text('Would you like to book $vendorName?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -249,23 +243,16 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
             ),
             TextButton(
               onPressed: () {
+                // Handle booking logic here
                 Navigator.of(context).pop();
-                // Navigate to CustomerBookingPage
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CustomerBookingPage(
-                      vendorId: widget.vendorData['_id'] ?? '',
-                      vendorEmail: widget.vendorData['owner'] ?? '',
-                      vendorType: widget.vendorType,
-                      token: widget.token, // Make sure to add token parameter to VendorDetailPage
-                      vendorName: vendorName,
-                      price: widget.vendorData['price']?? '',
-                    ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Booking request sent for $vendorName'),
+                    backgroundColor: Colors.green,
                   ),
                 );
               },
-              child: const Text('Check Availability'),
+              child: const Text('Confirm'),
             ),
           ],
         );

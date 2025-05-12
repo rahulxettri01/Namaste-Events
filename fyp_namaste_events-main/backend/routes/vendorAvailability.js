@@ -23,44 +23,12 @@ router.post("/create-slot", VerifyJWT, async (req, res) => {
       });
     }
 
-     // Check for existing slot
-     let existingSlot;
-     await connectInventoryDB(async () => {
-       existingSlot = await AvailabilityModel.find({
-         vendorEmail,
-         category,
-       });
-     });
- 
-
-     console.log("data", existingSlot);
-     
-
-     if (existingSlot.length > 0) {
-      console.log("in conditional");
-      
-       // Update existing slot
-       existingSlot[0].startDate = startDate;
-       existingSlot[0].endDate = endDate;
-       console.log("existingSlot", existingSlot);
- 
-       // Save the updated slot
-       await connectInventoryDB(async () => {
-         await existingSlot[0].save();
-       });
- 
-       return res.status(200).json({
-         success: true,
-         message: "Availability slot updated successfully",
-       });
-     }
-
     const newSlot = new AvailabilityModel({
       vendorEmail,
       startDate,
       endDate,
       category,
-      status: status || "Available",
+      status: status || "Available"
     });
 
     await connectInventoryDB(async () => {
@@ -85,33 +53,19 @@ router.post("/create-slot", VerifyJWT, async (req, res) => {
 router.get("/available", async (req, res) => {
   try {
     const { vendorEmail } = req.query;
-    console.log("Fetching availability for vendor:", vendorEmail);
-
-    if (!vendorEmail) {
-      return res.status(400).json({
-        success: false,
-        message: "Vendor email is required"
-      });
-    }
+    console.log("ven", vendorEmail);
 
     let availability;
     await connectInventoryDB(async () => {
       availability = await AvailabilityModel.find({
-        vendorEmail: vendorEmail,
-        status: "Available"
-      }).sort({ startDate: 1 });
+        vendorEmail,
+      }).sort({ date: 1 });
     });
-
-    console.log("Found availability slots:", availability);
-    return res.json({
-      success: true,
-      data: availability
-    });
+    res.json({ success: true, data: availability });
   } catch (error) {
-    console.error("Error fetching availability:", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: `Error fetching availability: ${error.message}`
+      message: `Error fetching availability: ${error.message}`,
     });
   }
 });
@@ -238,13 +192,13 @@ router.put("/update-slot/:id", VerifyJWT, async (req, res) => {
     await connectInventoryDB(async () => {
       const updatedSlot = await AvailabilityModel.findOneAndUpdate(
         { availabilityID: id },
-        {
+        { 
           $set: {
             startDate: updateData.startDate,
             endDate: updateData.endDate,
             status: updateData.status,
-            category: updateData.category,
-          },
+            category: updateData.category
+          }
         },
         { new: true }
       );
@@ -252,21 +206,21 @@ router.put("/update-slot/:id", VerifyJWT, async (req, res) => {
       if (!updatedSlot) {
         return res.status(404).json({
           success: false,
-          message: "Availability slot not found",
+          message: "Availability slot not found"
         });
       }
 
       res.json({
         success: true,
         message: "Availability slot updated successfully",
-        data: updatedSlot,
+        data: updatedSlot
       });
     });
   } catch (error) {
     console.error("Error updating slot:", error);
     res.status(500).json({
       success: false,
-      message: `Error updating availability slot: ${error.message}`,
+      message: `Error updating availability slot: ${error.message}`
     });
   }
 });
@@ -274,42 +228,18 @@ router.put("/update-slot/:id", VerifyJWT, async (req, res) => {
 router.get("/slots/vendor/:vendorId", async (req, res) => {
   try {
     const { vendorId } = req.params;
-
+    
     await connectInventoryDB(async () => {
       const vendor = await vendorModel.findById(vendorId);
       if (!vendor) {
         return res.status(404).json({
           success: false,
-          message: "Vendor not found",
+          message: "Vendor not found"
         });
       }
 
       const availability = await AvailabilityModel.find({
         vendorEmail: vendor.email,
-        status: "Available",
-      }).sort({ startDate: 1 });
-
-      return res.json({
-        success: true,
-        data: availability,
-      });
-    });
-  } catch (error) {
-    console.error("Error fetching availability:", error);
-    return res.status(500).json({
-      success: false,
-      message: `Error fetching availability: ${error.message}`,
-    });
-  }
-});
-// Get vendor availability by email
-router.get("/slots/email/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-
-    await connectInventoryDB(async () => {
-      const availability = await AvailabilityModel.find({
-        vendorEmail: email,
         status: "Available"
       }).sort({ startDate: 1 });
 

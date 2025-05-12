@@ -6,11 +6,7 @@ import 'package:fyp_namaste_events/pages/vendor_detail_page.dart';
 import 'package:fyp_namaste_events/pages/vendor_list_page.dart';
 
 class VendorsPage extends StatefulWidget {
-  final String token;
-  const VendorsPage({Key? key,
-    required this.token,
-  
-  }) : super(key: key);
+  const VendorsPage({Key? key}) : super(key: key);
 
   @override
   State<VendorsPage> createState() => _VendorsPageState();
@@ -352,7 +348,6 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: venues,
                                   category: 'Venue',
-                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -375,7 +370,6 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: photographers,
                                   category: 'Photographer',
-                                  token: widget.token,
                                 ),
                               ),
                             );
@@ -398,8 +392,6 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: decorServices,
                                   category: 'Decorator',
-                                  token: widget.token,
-
                                 ),
                               ),
                             );
@@ -430,7 +422,6 @@ class _VendorsPageState extends State<VendorsPage>
                                   builder: (context) => VendorDetailPage(
                                     vendorData: foodServices,
                                     vendorType: 'food',
-                                  token: widget.token,
                                   ),
                                 ),
                               );
@@ -445,7 +436,7 @@ class _VendorsPageState extends State<VendorsPage>
                 ),
               ],
             ),
-      bottomNavigationBar:  BottomNavBar(token: widget.token,),
+      bottomNavigationBar: const BottomNavBar(),
     );
   }
 }

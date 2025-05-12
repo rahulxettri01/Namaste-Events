@@ -1,36 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:fyp_namaste_events/pages/AddInventory.dart';
-import 'package:fyp_namaste_events/pages/AdminDahboardPage.dart';
-
-import 'package:fyp_namaste_events/pages/SignUpPage.dart';
-import 'package:fyp_namaste_events/pages/dashboardDecoration.dart';
-import 'package:fyp_namaste_events/pages/home_page.dart';
+import 'package:fyp_namaste_events/pages/InventoryDetailsPage.dart';
+import 'package:fyp_namaste_events/pages/ProfilePage.dart';
+import 'package:fyp_namaste_events/pages/dashboardPhotography.dart';
+import 'package:fyp_namaste_events/pages/furtherMore_page.dart';
 import 'package:fyp_namaste_events/pages/login_register_page.dart';
-import 'package:fyp_namaste_events/pages/splashScreen.dart';
 import 'package:fyp_namaste_events/providers/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import the SignUpPage widget
-import 'package:khalti_flutter/khalti_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
   runApp(
-    KhaltiScope(
-      publicKey:
-          "f2031fc6ad264335a75309fa6d49f089", // Replace with your Khalti public key
-      enabledDebugging: true,
-      builder: (context, navigatorKey) {
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Flutter App',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-          ),
-          home: LoginPage(), // Set SignUpPage as the first screen
-          localizationsDelegates: const [
-            KhaltiLocalizations.delegate,
-          ],
-        );
-      },
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+      ],
+      child: MyApp(
+        token: prefs.getString('FrontToken'),
+      ),
     ),
   );
 }

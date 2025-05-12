@@ -1,46 +1,27 @@
 const express = require("express");
 const router = express.Router();
-const  {bookingModel} = require("../models/booking");
+const { bookingModel } = require("../models/booking");
 const VerifyJWT = require("../middleware/VerifyJWT");
 
 // Create a new booking
 router.post("/create", VerifyJWT, async (req, res) => {
-  console.log("hit at /api/bookings/create");
-  
   try {
-    console.log("req.body", req.body);
-    
     const booking = new bookingModel({
       userId: req.user.id,
       vendorId: req.body.vendorId,
-      inventoryId: req.body.inventoryId?? '',
-      price: req.body.price,
-      paymentMethod: 'Khalti', // Using default value
-      bookingStatus: 'pending',
-      paymentStatus: 'pending',
-      status: 'active',
-      paidAmount: 0,
       eventDetails: {
         eventType: req.body.eventType,
-        startDate: new Date(req.body.startDate),
-        endDate: new Date(req.body.endDate),
-        eventName: req.body.eventName,
-        eventDescription: req.body.eventDescription || '',
+        eventDate: new Date(req.body.eventDate),
         guestCount: req.body.guestCount,
+        requirements: req.body.requirements,
+        venue: req.body.venue,
       },
       totalAmount: req.body.totalAmount,
     });
 
     const savedBooking = await booking.save();
-
-    if (!savedBooking) {
-      return res.status(500).json({ error: "Failed to create booking" });
-    }
-
-    res.status(201).json({ message: "Booking created successfully", booking: savedBooking, status: 201});
+    res.status(201).json(savedBooking);
   } catch (error) {
-    console.log("error at /api/bookings/create", error.message);
-    
     res.status(500).json({ error: error.message });
   }
 });

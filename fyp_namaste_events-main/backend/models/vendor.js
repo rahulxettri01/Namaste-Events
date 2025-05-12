@@ -1,15 +1,31 @@
 const mongoose = require("mongoose");
 
+// Add profileImage field to your vendor schema
 const vendorSchema = new mongoose.Schema({
   vendorName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   password: { type: String, required: true },
-  role: { type: String, default: "admin" },
+  role: { type: String, default: "vendor" },
   status: { type: String, default: "unverified" },
   citizenshipFilePath: { type: String },
   panFilePath: { type: String },
   category: { type: String, required: true },
+  // Add these fields to your vendor schema
+  resetOTP: {
+    type: String,
+    default: null
+  },
+  resetOTPExpiry: {
+    type: Date,
+    default: null
+  },
+  resetPasswordOTP: { type: String },
+  resetPasswordOTPExpiry: { type: Date },
+  profileImage: {
+    type: String,
+    default: null
+  },
 });
 
 const vendorModel = mongoose.model("vendorModels", vendorSchema);

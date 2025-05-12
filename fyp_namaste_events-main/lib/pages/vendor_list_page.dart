@@ -7,46 +7,43 @@ import '../services/Api/api_vendor_availability.dart';
 class VendorListPage extends StatelessWidget {
   final List<dynamic> vendors;
   final String category;
-  final String token;
 
   const VendorListPage({
     Key? key,
     required this.vendors,
     required this.category,
-    required this.token,
   }) : super(key: key);
 
-  Future<void> _checkAvailability(BuildContext context, Map<String, dynamic> vendor) async {
+  Future<void> _checkAvailability(
+      BuildContext context, Map<String, dynamic> vendor) async {
     try {
-      final vendorEmail = vendor['email']?.toString();
-      print('Vendor Email: $vendorEmail'); // Debug print
-      
-      if (vendorEmail == null || vendorEmail.isEmpty) {
+      final vendorId = vendor['_id']?.toString();
+      if (vendorId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: Vendor email is missing in the vendor data'),
+            content: Text('Vendor ID not found'),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
           ),
         );
         return;
       }
 
-      final availableSlots = await ApiVendorAvailability.fetchVendorAvailability(
-        vendorEmail,
+      final availableSlots =
+          await ApiVendorAvailability.fetchVendorAvailabilityById(
+        vendorId,
       );
 
       if (availableSlots.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No available slots found for vendor: $vendorEmail'),
+            content: Text('No availability slots found for this vendor'),
             backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
           ),
         );
         return;
       }
 
+      // Show availability view
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -140,7 +137,6 @@ class VendorListPage extends StatelessWidget {
                               builder: (context) => VendorDetailPage(
                                 vendorData: vendor,
                                 vendorType: _getVendorType(),
-                                token: token,
                               ),
                             ),
                           );
@@ -152,7 +148,7 @@ class VendorListPage extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                             // primary: Colors.green,
                             ),
-                        child: Text('Book Nowddd'),
+                        child: Text('Book Now'),
                       ),
                     ],
                   ),

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const multer = require("multer");
 const path = require("path");
-const bcrypt = require("bcrypt"); // Add bcrypt for password hashing
+const bcrypt = require("bcrypt");
 const app = express();
 const PORT = 2000;
 
@@ -30,22 +30,21 @@ const vendorAuth = require("./routes/VendorAuthentication");
 const vendorRoutes = require("./routes/vendor");
 const imageRoutes = require("./routes/images");
 const superAdminRoutes = require("./routes/admin");
-const inventoryRoutes = require("./routes/inventory"); // New route added
+const inventoryRoutes = require("./routes/inventory");
 const otpRoutes = require("./routes/otpRoutes");
-
-// Add this line with your other routes
 const bookingRoutes = require("./routes/bookingRoutes");
 const VendorAvailabilityRoutes = require("./routes/vendorAvailability");
 
+// Register all routes
 app.use("/api/vendorAvailability", VendorAvailabilityRoutes);
-// Add this line where you define other app.use() statements
 app.use("/api/bookings", bookingRoutes);
 app.use("/api", inventoryAction);
 app.use("/auth", userAuth);
-app.use("/vendor", vendorAuth);
+app.use("/vendor/auth", vendorAuth); // Changed from "/vendor" to "/vendor/auth"
+app.use("/vendor", vendorRoutes);    // Added vendor routes
 app.use("/superadmin", superAdminRoutes);
 app.use("/images", imageRoutes);
-app.use("/inventory", inventoryRoutes); // New route added
+app.use("/inventory", inventoryRoutes);
 app.use("/api/otp", otpRoutes);
 
 // Function to initialize admin if not exists
@@ -96,3 +95,4 @@ mongoose
   .catch((err) => {
     console.error("Database connection error:", err.message);
   });
+

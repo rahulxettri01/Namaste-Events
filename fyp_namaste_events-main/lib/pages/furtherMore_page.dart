@@ -178,12 +178,13 @@ class _VerificationPageState extends State<VerificationPage> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity),
+            // Adding blur effect to the background
             Positioned.fill(
-                child: BackdropFilter(
-              filter: ImageFilter.blur(
-                  sigmaX: 5, sigmaY: 5), // Reduced blur intensity
-              child: Container(color: Colors.black.withOpacity(0.3)),
-            )),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                child: Container(color: Colors.black.withOpacity(0.2)),
+              ),
+            ),
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -194,12 +195,12 @@ class _VerificationPageState extends State<VerificationPage> {
                     const Text(
                       "Furthermore details",
                       style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     const SizedBox(height: 5),
                     const Text(
                       '"Turning Plans into Perfect Moments!"',
-                      style: TextStyle(fontSize: 14, color: Colors.blueAccent),
+                      style: TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 30),
 
@@ -211,19 +212,23 @@ class _VerificationPageState extends State<VerificationPage> {
                       children: [
                         Checkbox(
                           value: isChecked,
-                          activeColor: Colors.purple,
+                          activeColor: Colors.black,
+                          checkColor: Colors.white,
                           onChanged: (value) {
                             setState(() {
                               isChecked = value!;
                             });
                           },
                         ),
-                        const Text("I agree with the "),
-                        const Text(
-                          "Terms of Service & Privacy Policy",
-                          style: TextStyle(
-                              color: Colors.blue,
-                              decoration: TextDecoration.underline),
+                        const Flexible(
+                          child: Text(
+                            "I agree with the Terms of Service & Privacy Policy",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -235,14 +240,15 @@ class _VerificationPageState extends State<VerificationPage> {
                       child: ElevatedButton(
                         onPressed: isChecked ? uploadFiles : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
+                          backgroundColor: Colors.black,
+                          disabledBackgroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: const Text(
                           "For verification",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -259,28 +265,14 @@ class _VerificationPageState extends State<VerificationPage> {
                       },
                       child: const Text(
                         "Have an account? Log in",
-                        style: TextStyle(fontSize: 14, color: Colors.black),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Sign-out button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _signOut,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          "Sign Out",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 14, 
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    // Removed sign-out button
                   ],
                 ),
               ),
@@ -307,7 +299,7 @@ class _VerificationPageState extends State<VerificationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Select Files",
+            const Text("Select Citizenship and PAN Document",
                 style: TextStyle(fontSize: 16, color: Colors.black54)),
             const SizedBox(height: 5),
             Column(
@@ -318,7 +310,7 @@ class _VerificationPageState extends State<VerificationPage> {
                           const TextStyle(fontSize: 14, color: Colors.black87)))
                   .toList(),
             ),
-            const Icon(Icons.upload_file, color: Colors.purple),
+            const Icon(Icons.upload_file, color: Colors.black),
           ],
         ),
       ),

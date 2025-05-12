@@ -6,8 +6,7 @@ import 'package:fyp_namaste_events/pages/bookingPage.dart';
 import 'package:fyp_namaste_events/pages/home_page.dart';
 
 class BottomNavBar extends StatefulWidget {
-  final String token;
-  const BottomNavBar({super.key, required this.token});
+  const BottomNavBar({super.key});
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
@@ -44,7 +43,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => HomePage(token: widget.token,),
+                    pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
@@ -59,7 +58,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) =>  VendorsPage(token: widget.token,),
+                    pageBuilder: (context, animation, secondaryAnimation) => const VendorsPage(),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
@@ -92,7 +91,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(),
+                    pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(token: null,),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
