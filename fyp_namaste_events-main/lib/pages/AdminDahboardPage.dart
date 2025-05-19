@@ -187,32 +187,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     try {
       final allUsers = await Api.getAllUsers();
-      final verifiedUsersList = allUsers.where((user) => 
-        user['status'] == 'verified' || 
-        user['isVerified'] == true || 
-        user['isVerified'] == 'true' || 
-        user['isVerified'] == 1
-      ).toList();
-      
-      final unverifiedUsersList = allUsers.where((user) => 
-        user['status'] != 'verified' && 
-        user['isVerified'] != true && 
-        user['isVerified'] != 'true' && 
-        user['isVerified'] != 1
-      ).toList();
+      final verifiedUsersList = allUsers
+          .where((user) =>
+              user['status'] == 'verified' ||
+              user['isVerified'] == true ||
+              user['isVerified'] == 'true' ||
+              user['isVerified'] == 1)
+          .toList();
+
+      final unverifiedUsersList = allUsers
+          .where((user) =>
+              user['status'] != 'verified' &&
+              user['isVerified'] != true &&
+              user['isVerified'] != 'true' &&
+              user['isVerified'] != 1)
+          .toList();
 
       setState(() {
         totalUsers = allUsers.length;
         verifiedUsers = verifiedUsersList.length;
         unverifiedUsers = unverifiedUsersList.length;
-        
-        verifiedEmails = verifiedUsersList
-            .map((user) => user['email'].toString())
-            .toList();
+
+        verifiedEmails =
+            verifiedUsersList.map((user) => user['email'].toString()).toList();
         unverifiedEmails = unverifiedUsersList
             .map((user) => user['email'].toString())
             .toList();
-            
+
         isLoading = false;
       });
     } catch (e) {
@@ -579,79 +580,84 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildUserTypeCard(String type, int count, Color color, IconData icon) {
-      return Card(
-        margin: EdgeInsets.symmetric(vertical: 8),
-        elevation: 4,
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: color,
-            child: Icon(
-              icon,
-              color: Colors.white,
-            ),
+  Widget _buildUserTypeCard(
+      String type, int count, Color color, IconData icon) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      elevation: 4,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color,
+          child: Icon(
+            icon,
+            color: Colors.white,
           ),
-          title: Text(
-            type,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          subtitle: Text('$count users'),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios, size: 16),
-            ],
-          ),
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text(type),
-                  content: Container(
-                    width: double.maxFinite,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: type.contains('Verified') ? verifiedEmails.length : unverifiedEmails.length,
-                      itemBuilder: (context, index) {
-                        final email = type.contains('Verified') 
-                            ? verifiedEmails[index] 
-                            : unverifiedEmails[index];
-                        return ListTile(
-                          leading: Icon(
-                            type.contains('Verified') ? Icons.check_circle : Icons.pending,
-                            color: color,
-                          ),
-                          title: Text(email),
-                        );
-                      },
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Close'),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
         ),
-      );
-    }
+        title: Text(
+          type,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Text('$count users'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.arrow_forward_ios, size: 16),
+          ],
+        ),
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(type),
+                content: Container(
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: type.contains('Verified')
+                        ? verifiedEmails.length
+                        : unverifiedEmails.length,
+                    itemBuilder: (context, index) {
+                      final email = type.contains('Verified')
+                          ? verifiedEmails[index]
+                          : unverifiedEmails[index];
+                      return ListTile(
+                        leading: Icon(
+                          type.contains('Verified')
+                              ? Icons.check_circle
+                              : Icons.pending,
+                          color: color,
+                        ),
+                        title: Text(email),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Close'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 
   // Rename existing _buildDashboardView to _buildVendorDashboardView
   Widget _buildVendorDashboardView() {
@@ -815,6 +821,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     builder: (context) => VendorListPage(
                       vendors: filteredVendors,
                       category: type,
+                      token: widget.token,
                     ),
                   ),
                 );

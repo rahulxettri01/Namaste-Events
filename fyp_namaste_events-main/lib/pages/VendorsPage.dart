@@ -6,18 +6,19 @@ import 'package:fyp_namaste_events/pages/vendor_detail_page.dart';
 import 'package:fyp_namaste_events/pages/vendor_list_page.dart';
 
 class VendorsPage extends StatefulWidget {
-  const VendorsPage({Key? key}) : super(key: key);
+  final String token;
+  const VendorsPage({Key? key, required this.token}) : super(key: key);
 
   @override
   State<VendorsPage> createState() => _VendorsPageState();
 }
 
-class _VendorsPageState extends State<VendorsPage> 
+class _VendorsPageState extends State<VendorsPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   late VendorService vendorService;
-  
+
   // For image slider
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -27,7 +28,7 @@ class _VendorsPageState extends State<VendorsPage>
     'assets/onboarding3.JPG',
     'assets/furthermore.JPG',
   ];
-  
+
   // For vendor data
   List<dynamic> venues = [];
   List<dynamic> photographers = [];
@@ -39,13 +40,13 @@ class _VendorsPageState extends State<VendorsPage>
   void initState() {
     super.initState();
     vendorService = VendorService(APIConstants.baseUrl);
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
+
     // Create slide animation
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1.0),
@@ -54,27 +55,27 @@ class _VendorsPageState extends State<VendorsPage>
       parent: _animationController,
       curve: Curves.easeOutQuad,
     ));
-    
+
     _animationController.forward();
-    
+
     // Auto-scroll for image slider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoScroll();
     });
-    
+
     // Fetch vendor data
     fetchVendors();
   }
-  
+
   // Fetch vendors from MongoDB
   Future<void> fetchVendors() async {
     setState(() {
       isLoading = true;
     });
-    
+
     try {
       final response = await vendorService.fetchAllInventory();
-      
+
       if (response['success']) {
         setState(() {
           venues = response['data']['venues'];
@@ -268,7 +269,7 @@ class _VendorsPageState extends State<VendorsPage>
               children: [
                 // Image Slider at the top
                 Container(
-                  height: 250,  // Changed from 180 to 250
+                  height: 250, // Changed from 180 to 250
                   width: double.infinity,
                   child: Stack(
                     children: [
@@ -292,7 +293,7 @@ class _VendorsPageState extends State<VendorsPage>
                           );
                         },
                       ),
-  
+
                       // Gradient overlay
                       Positioned(
                         bottom: 0,
@@ -312,7 +313,7 @@ class _VendorsPageState extends State<VendorsPage>
                           ),
                         ),
                       ),
-  
+
                       // Page indicator dots
                       Positioned(
                         bottom: 20,
@@ -326,7 +327,7 @@ class _VendorsPageState extends State<VendorsPage>
                     ],
                   ),
                 ),
-  
+
                 // Rest of the content in a scrollable area
                 Expanded(
                   child: SingleChildScrollView(
@@ -336,7 +337,7 @@ class _VendorsPageState extends State<VendorsPage>
                         _buildCategoryCard(
                           context,
                           title: 'Venues',
-                          subtitle: venues.isNotEmpty 
+                          subtitle: venues.isNotEmpty
                               ? '${venues.length} venues available'
                               : 'Banquet Halls, Event Halls, Party Palace',
                           color: Colors.purple[200]!,
@@ -348,19 +349,20 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: venues,
                                   category: 'Venue',
+                                  token: widget.token,
                                 ),
                               ),
                             );
                           },
                         ),
-  
+
                         // Photographers Category
                         _buildCategoryCard(
                           context,
                           title: 'Photographers',
-                          subtitle: photographers.isNotEmpty 
+                          subtitle: photographers.isNotEmpty
                               ? '${photographers.length} photographers available'
-                              : 'Johna Photography, Rahul Clicks...',
+                              : 'Professional Photography Services',
                           color: Colors.green[200]!,
                           image: 'assets/photography.png',
                           onTap: () {
@@ -370,19 +372,20 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: photographers,
                                   category: 'Photographer',
+                                  token: widget.token,
                                 ),
                               ),
                             );
                           },
                         ),
-  
+
                         // Planning and Decor Category
                         _buildCategoryCard(
                           context,
                           title: 'Planning and Decor',
-                          subtitle: decorServices.isNotEmpty 
+                          subtitle: decorServices.isNotEmpty
                               ? '${decorServices.length} decor services available'
-                              : 'Wedding Planners, Decoration Experts...',
+                              : 'Event Planning & Decoration Services',
                           color: Colors.pink[100]!,
                           image: 'assets/decorartion.png',
                           onTap: () {
@@ -392,43 +395,32 @@ class _VendorsPageState extends State<VendorsPage>
                                 builder: (context) => VendorListPage(
                                   vendors: decorServices,
                                   category: 'Decorator',
+                                  token: widget.token,
                                 ),
                               ),
                             );
                           },
                         ),
-  
+
                         // Food Category
                         _buildCategoryCard(
                           context,
                           title: 'Food',
-                          subtitle: foodServices.isNotEmpty 
+                          subtitle: foodServices.isNotEmpty
                               ? '${foodServices.length} food services available'
-                              : 'Catering Services, Cake, Drinks...',
+                              : 'Catering Services Coming Soon',
                           color: Colors.yellow[200]!,
                           image: 'assets/food.png',
                           onTap: () {
-                            if (foodServices.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('No food services available at the moment'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => VendorDetailPage(
-                                    vendorData: foodServices,
-                                    vendorType: 'food',
-                                  ),
-                                ),
-                              );
-                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Food services coming soon!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           },
                         ),
-  
+
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -436,7 +428,7 @@ class _VendorsPageState extends State<VendorsPage>
                 ),
               ],
             ),
-      bottomNavigationBar: const BottomNavBar(),
+      bottomNavigationBar: BottomNavBar(token: widget.token),
     );
   }
 }

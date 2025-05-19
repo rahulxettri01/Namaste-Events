@@ -100,7 +100,7 @@ class _VerificationPageState extends State<VerificationPage> {
 
         var request = http.MultipartRequest(
           'POST',
-          Uri.parse('${APIConstants.baseUrl}vendor/vendorAuth/upload'),
+          Uri.parse('${APIConstants.baseUrl}vendor/auth/vendorAuth/upload'),
         );
 
         for (var file in selectedFiles) {
@@ -194,13 +194,18 @@ class _VerificationPageState extends State<VerificationPage> {
                   children: [
                     const Text(
                       "Furthermore details",
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
                     ),
                     const SizedBox(height: 5),
                     const Text(
                       '"Turning Plans into Perfect Moments!"',
-                      style: TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 30),
 
@@ -248,7 +253,10 @@ class _VerificationPageState extends State<VerificationPage> {
                         ),
                         child: const Text(
                           "For verification",
-                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -266,7 +274,7 @@ class _VerificationPageState extends State<VerificationPage> {
                       child: const Text(
                         "Have an account? Log in",
                         style: TextStyle(
-                          fontSize: 14, 
+                          fontSize: 14,
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),

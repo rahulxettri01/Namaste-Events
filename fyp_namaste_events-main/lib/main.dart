@@ -5,22 +5,14 @@ import 'package:fyp_namaste_events/pages/dashboardPhotography.dart';
 import 'package:fyp_namaste_events/pages/furtherMore_page.dart';
 import 'package:fyp_namaste_events/pages/login_register_page.dart';
 import 'package:fyp_namaste_events/providers/user_provider.dart';
+import 'package:fyp_namaste_events/utils/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import the SignUpPage widget
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-      ],
-      child: MyApp(
-        token: prefs.getString('FrontToken'),
-      ),
-    ),
-  );
+  await SharedPreferencesService.init();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {

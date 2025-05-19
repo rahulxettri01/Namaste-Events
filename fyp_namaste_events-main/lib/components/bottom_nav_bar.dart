@@ -6,7 +6,8 @@ import 'package:fyp_namaste_events/pages/bookingPage.dart';
 import 'package:fyp_namaste_events/pages/home_page.dart';
 
 class BottomNavBar extends StatefulWidget {
-  const BottomNavBar({super.key});
+  final String token;
+  const BottomNavBar({super.key, required this.token});
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
@@ -43,9 +44,13 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        HomePage(
+                      token: widget.token,
+                    ),
                     transitionDuration: const Duration(milliseconds: 500),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
                         opacity: animation,
                         child: child,
@@ -58,9 +63,13 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const VendorsPage(),
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        VendorsPage(
+                      token: widget.token,
+                    ),
                     transitionDuration: const Duration(milliseconds: 500),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
                         opacity: animation,
                         child: child,
@@ -73,9 +82,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const BookingListPage(),
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const BookingListPage(),
                     transitionDuration: const Duration(milliseconds: 500),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
                         opacity: animation,
                         child: child,
@@ -91,9 +102,13 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const ProfilePage(token: null,),
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        ProfilePage(
+                      token: widget.token,
+                    ),
                     transitionDuration: const Duration(milliseconds: 500),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
                       return FadeTransition(
                         opacity: animation,
                         child: child,
@@ -108,8 +123,10 @@ class _BottomNavBarState extends State<BottomNavBar> {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
             BottomNavigationBarItem(icon: Icon(Icons.store), label: "Vendors"),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "Bookings"),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notifications"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_today), label: "Bookings"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.notifications), label: "Notifications"),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
           ],
           backgroundColor: const Color(0xFF0A1931),

@@ -104,8 +104,9 @@ class _LoginPageState extends State<LoginPage> {
         final response = await Api.login(data);
         if (response != null) {
           int statusCode = response["status_code"];
-          
-          if (statusCode == 401) {  // Unauthorized - invalid credentials
+
+          if (statusCode == 401) {
+            // Unauthorized - invalid credentials
             setState(() {
               errorMessage = "Invalid email or password";
             });
@@ -150,7 +151,10 @@ class _LoginPageState extends State<LoginPage> {
               } else if (response["status"] == "verified") {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(
+                      builder: (context) => HomePage(
+                            token: newToken,
+                          )),
                 );
               }
             }
@@ -438,7 +442,7 @@ class _LoginPageState extends State<LoginPage> {
                           });
                           return;
                         }
-                        
+
                         if (selectedResetRole == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -468,29 +472,38 @@ class _LoginPageState extends State<LoginPage> {
                             // First check if vendor email exists
                             response = await Api.checkVendorEmail(emailData);
                             print("Vendor email check response: $response");
-                            
-                            if (response["success"] == true && response["exists"] == true) {
+
+                            if (response["success"] == true &&
+                                response["exists"] == true) {
                               // If email exists, send OTP
-                              final forgotResult = await Api.forgotVendorPassword(emailController.text);
-                              print("Forgot vendor password response: $forgotResult");
-                              
-                              if (forgotResult != null && forgotResult["success"] == true) {
+                              final forgotResult =
+                                  await Api.forgotVendorPassword(
+                                      emailController.text);
+                              print(
+                                  "Forgot vendor password response: $forgotResult");
+
+                              if (forgotResult != null &&
+                                  forgotResult["success"] == true) {
                                 Navigator.of(context).pop();
-                                
+
                                 // Navigate to vendor OTP page
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => VendorForgotPasswordOTPPage(
+                                    builder: (context) =>
+                                        VendorForgotPasswordOTPPage(
                                       email: emailController.text,
-                                      vendorId: forgotResult["vendorId"] ?? response["vendorId"] ?? '',
+                                      vendorId: forgotResult["vendorId"] ??
+                                          response["vendorId"] ??
+                                          '',
                                     ),
                                   ),
                                 );
                               } else {
                                 setState(() {
                                   isLoading = false;
-                                  errorText = forgotResult?["message"] ?? "Failed to send OTP. Please try again.";
+                                  errorText = forgotResult?["message"] ??
+                                      "Failed to send OTP. Please try again.";
                                 });
                               }
                             } else {
@@ -502,14 +515,14 @@ class _LoginPageState extends State<LoginPage> {
                           } else {
                             // User password reset flow
                             response = await Api.checkValidEmail(emailData);
-                            
+
                             setState(() {
                               isLoading = false;
                             });
-                            
+
                             if (response["status"] == "success") {
                               Navigator.of(context).pop();
-                              
+
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -521,7 +534,8 @@ class _LoginPageState extends State<LoginPage> {
                               );
                             } else {
                               setState(() {
-                                errorText = response["message"] ?? "Email not found or invalid";
+                                errorText = response["message"] ??
+                                    "Email not found or invalid";
                               });
                             }
                           }

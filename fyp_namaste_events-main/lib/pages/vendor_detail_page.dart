@@ -1,5 +1,6 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:fyp_namaste_events/pages/customer_booking_page.dart';
 import 'package:fyp_namaste_events/utils/theme/custom_themes/text_theme.dart';
 // Make sure these packages are added to your pubspec.yaml
 
@@ -8,11 +9,13 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 class VendorDetailPage extends StatefulWidget {
   final dynamic vendorData;
   final String vendorType;
+  final String token;
 
   const VendorDetailPage({
     Key? key,
     required this.vendorData,
     required this.vendorType,
+    required this.token,
   }) : super(key: key);
 
   @override
@@ -32,6 +35,9 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
 
     // Get vendor name based on type
     String vendorName = '';
+    String vendorEmail = widget.vendorData['owner'] ?? "";
+    print("vendor data");
+    print(widget.vendorData);
     if (widget.vendorType == 'venue') {
       vendorName = widget.vendorData['venueName'] ?? 'Venue';
     } else if (widget.vendorType == 'photographer') {
@@ -41,16 +47,17 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
     }
 
     // Get vendor description
-    String description = widget.vendorData['description'] ?? 'No description available';
-    
+    String description =
+        widget.vendorData['description'] ?? 'No description available';
+
     // Get vendor price
-    String price = widget.vendorData['price'] != null 
-        ? 'Rs. ${widget.vendorData['price']}' 
+    String price = widget.vendorData['price'] != null
+        ? 'Rs. ${widget.vendorData['price']}'
         : 'Price not available';
-    
+
     // Get vendor address
     String address = widget.vendorData['address'] ?? 'Address not available';
-    
+
     // Get vendor images - handle different image formats
     List<dynamic> images = [];
     if (widget.vendorData['images'] != null) {
@@ -93,27 +100,30 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                       } else if (image is String) {
                         imageUrl = image;
                       }
-                      
+
                       return Builder(
                         builder: (BuildContext context) {
                           return Container(
                             width: MediaQuery.of(context).size.width,
-                            child: imageUrl.isNotEmpty 
-                              ? Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    print("Image error: $error");
-                                    return Container(
-                                      color: Colors.grey.shade300,
-                                      child: const Icon(Icons.image_not_supported, size: 40),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(Icons.image_not_supported, size: 40),
-                                ),
+                            child: imageUrl.isNotEmpty
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print("Image error: $error");
+                                      return Container(
+                                        color: Colors.grey.shade300,
+                                        child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 40),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(Icons.image_not_supported,
+                                        size: 40),
+                                  ),
                           );
                         },
                       );
@@ -149,7 +159,7 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                   color: Colors.grey.shade700,
                 ),
               ),
-              
+
             // Vendor details
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -162,22 +172,24 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                     style: textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Price
                   Row(
                     children: [
-                      Icon(Icons.monetization_on, color: Theme.of(context).primaryColor),
+                      Icon(Icons.monetization_on,
+                          color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
                       Text(price, style: textTheme.bodyLarge),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Address
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on, color: Theme.of(context).primaryColor),
+                      Icon(Icons.location_on,
+                          color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(address, style: textTheme.bodyLarge),
@@ -185,7 +197,7 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Description
                   Text('Description', style: textTheme.titleLarge),
                   const SizedBox(height: 8),
@@ -193,9 +205,9 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                     description,
                     style: textTheme.bodyMedium,
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Book Now button
                   SizedBox(
                     width: double.infinity,
@@ -214,7 +226,8 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
                       ),
                       child: Text(
                         'Book Now',
-                        style: textTheme.titleMedium?.copyWith(color: Colors.white),
+                        style: textTheme.titleMedium
+                            ?.copyWith(color: Colors.white),
                       ),
                     ),
                   ),
@@ -226,14 +239,15 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
       ),
     );
   }
-  
+
   void _showBookingDialog(BuildContext context, String vendorName) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Book ${widget.vendorType.capitalize()}'),
-          content: Text('Would you like to book $vendorName?'),
+          content:
+              Text('Would you like to check availability for $vendorName?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -243,16 +257,24 @@ class _VendorDetailPageState extends State<VendorDetailPage> {
             ),
             TextButton(
               onPressed: () {
-                // Handle booking logic here
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Booking request sent for $vendorName'),
-                    backgroundColor: Colors.green,
+                // Navigate to CustomerBookingPage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CustomerBookingPage(
+                      vendorId: widget.vendorData['_id'] ?? '',
+                      vendorEmail: widget.vendorData['owner'] ?? '',
+                      vendorType: widget.vendorType,
+                      token: widget
+                          .token, // Make sure to add token parameter to VendorDetailPage
+                      vendorName: vendorName,
+                      price: widget.vendorData['price'] ?? '',
+                    ),
                   ),
                 );
               },
-              child: const Text('Confirm'),
+              child: const Text('Check Availability'),
             ),
           ],
         );

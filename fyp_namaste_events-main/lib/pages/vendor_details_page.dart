@@ -35,10 +35,10 @@ class _VendorDetailsPageState extends State<VendorDetailsPage> {
     });
 
     try {
-      print("Fetching images...");
+      print("Fetching images...");  
       print("Token: ${widget.token}");
-      var url =
-          Uri.parse('${APIConstants.baseUrl}vendor/get_verification_images');
+      var url = Uri.parse(
+          '${APIConstants.baseUrl}vendor/auth/get_verification_images');
       final response = await http.post(
         url,
         headers: {
@@ -85,7 +85,8 @@ class _VendorDetailsPageState extends State<VendorDetailsPage> {
 
     try {
       print(widget.vendor['_id']);
-      var url = Uri.parse('${APIConstants.baseUrl}vendor/update_vendor_status');
+      var url =
+          Uri.parse('${APIConstants.baseUrl}vendor/auth/update_vendor_status');
       print(url);
       final response = await http.post(
         url,

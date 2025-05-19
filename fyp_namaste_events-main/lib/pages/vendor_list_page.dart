@@ -7,11 +7,13 @@ import '../services/Api/api_vendor_availability.dart';
 class VendorListPage extends StatelessWidget {
   final List<dynamic> vendors;
   final String category;
+  final String token;
 
   const VendorListPage({
     Key? key,
     required this.vendors,
     required this.category,
+    required this.token,
   }) : super(key: key);
 
   Future<void> _checkAvailability(
@@ -137,18 +139,24 @@ class VendorListPage extends StatelessWidget {
                               builder: (context) => VendorDetailPage(
                                 vendorData: vendor,
                                 vendorType: _getVendorType(),
+                                token: token,
                               ),
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
                         child: Text('View Details'),
                       ),
                       ElevatedButton(
                         onPressed: () => _checkAvailability(context, vendor),
                         style: ElevatedButton.styleFrom(
-                            // primary: Colors.green,
-                            ),
-                        child: Text('Book Now'),
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text('Check Availability'),
                       ),
                     ],
                   ),

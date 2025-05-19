@@ -16,6 +16,7 @@ router.post("/create-slot", VerifyJWT, async (req, res) => {
   try {
     const { vendorEmail, startDate, endDate, category, status } = req.body;
 
+    // Validate required fields
     if (!vendorEmail || !startDate || !endDate || !category) {
       return res.status(400).json({
         success: false,
@@ -23,12 +24,37 @@ router.post("/create-slot", VerifyJWT, async (req, res) => {
       });
     }
 
+    // Check for existing slot
+    let existingSlot;
+    await connectInventoryDB(async () => {
+      existingSlot = await AvailabilityModel.find({
+        vendorEmail,
+        category,
+      });
+    });
+
+    // If slot exists, update it
+    if (existingSlot.length > 0) {
+      existingSlot[0].startDate = startDate;
+      existingSlot[0].endDate = endDate;
+
+      await connectInventoryDB(async () => {
+        await existingSlot[0].save();
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Availability slot updated successfully",
+      });
+    }
+
+    // Create new slot if none exists
     const newSlot = new AvailabilityModel({
       vendorEmail,
       startDate,
       endDate,
       category,
-      status: status || "Available"
+      status: status || "Available",
     });
 
     await connectInventoryDB(async () => {
@@ -240,6 +266,31 @@ router.get("/slots/vendor/:vendorId", async (req, res) => {
 
       const availability = await AvailabilityModel.find({
         vendorEmail: vendor.email,
+        status: "Available"
+      }).sort({ startDate: 1 });
+
+      return res.json({
+        success: true,
+        data: availability
+      });
+    });
+  } catch (error) {
+    console.error("Error fetching availability:", error);
+    return res.status(500).json({
+      success: false,
+      message: `Error fetching availability: ${error.message}`
+    });
+  }
+});
+
+// Get vendor availability by email
+router.get("/slots/email/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    await connectInventoryDB(async () => {
+      const availability = await AvailabilityModel.find({
+        vendorEmail: email,
         status: "Available"
       }).sort({ startDate: 1 });
 

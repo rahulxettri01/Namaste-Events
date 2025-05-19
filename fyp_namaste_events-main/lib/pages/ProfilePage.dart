@@ -8,11 +8,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
 
-
-
-
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key, required token}) : super(key: key);
+  final String token;
+  const ProfilePage({Key? key, required this.token}) : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
@@ -26,7 +24,6 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   String _errorMessage = '';
   String? _userRole;
-  String? _token;
 
   @override
   void initState() {
@@ -36,7 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadToken() async {
-    _token = await APIConstants.getToken();
+    // token = await APIConstants.getToken();
   }
 
   Future<void> _fetchUserProfile() async {
@@ -110,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       // Clear any stored tokens or user data
       await APIConstants.clearToken();
-      
+
       // Navigate to login page
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -126,26 +123,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Then update the _navigateToChangePassword method
   void _navigateToChangePassword() {
-    if (_token != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UserChangePasswordPage(token: _token!),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authentication error. Please login again.')),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserChangePasswordPage(token: widget.token),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-        bottomNavigationBar: BottomNavBar(),
+      return Scaffold(
+        body: const Center(child: CircularProgressIndicator()),
+        bottomNavigationBar: BottomNavBar(
+          token: widget.token,
+        ),
       );
     }
 
@@ -179,7 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ),
-            
+
             // Profile information section
             Container(
               padding: const EdgeInsets.all(16),
@@ -315,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            
+
             // Account settings section
             const SizedBox(height: 24),
             Container(
@@ -343,7 +336,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Change Password Button
                   InkWell(
                     onTap: _navigateToChangePassword,
@@ -361,14 +354,15 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           Spacer(),
-                          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                          Icon(Icons.arrow_forward_ios,
+                              size: 16, color: Colors.grey),
                         ],
                       ),
                     ),
                   ),
-                  
+
                   const Divider(),
-                  
+
                   // Logout Button
                   InkWell(
                     onTap: _logout,
@@ -387,7 +381,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           Spacer(),
-                          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                          Icon(Icons.arrow_forward_ios,
+                              size: 16, color: Colors.grey),
                         ],
                       ),
                     ),
@@ -398,7 +393,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
+      bottomNavigationBar: BottomNavBar(
+        token: widget.token,
+      ),
     );
   }
 
