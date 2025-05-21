@@ -42,7 +42,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api", inventoryAction);
 app.use("/auth", userAuth);
 app.use("/vendor/auth", vendorAuth); // Changed from "/vendor" to "/vendor/auth"
-app.use("/vendor", vendorRoutes);    // Added vendor routes
+app.use("/vendor", vendorRoutes); // Added vendor routes
 app.use("/superadmin", superAdminRoutes);
 app.use("/images", imageRoutes);
 app.use("/inventory", inventoryRoutes);
@@ -51,50 +51,53 @@ app.use("/api/payment", paymentRoutes);
 
 // Function to initialize admin if not exists
 async function initializeAdmin() {
-  try {
-    console.log("Checking if admin exists in database...");
-    const adminExists = await superAdminModel.findOne({
-      email: process.env.ADMIN_EMAIL,
-    });
+	try {
+		console.log("Checking if admin exists in database...");
+		const adminExists = await superAdminModel.findOne({
+			email: process.env.ADMIN_EMAIL,
+		});
 
-    if (!adminExists) {
-      console.log("Admin does not exist, creating one...");
+		if (!adminExists) {
+			console.log("Admin does not exist, creating one...");
 
-      const salt = await bcrypt.genSalt(10);
-      const passwordEncrypted = await bcrypt.hash(
-        process.env.ADMIN_PASSWORD,
-        salt
-      );
+			const salt = await bcrypt.genSalt(10);
+			const passwordEncrypted = await bcrypt.hash(
+				process.env.ADMIN_PASSWORD,
+				salt
+			);
 
-      const newAdmin = new superAdminModel({
-        userName: "superAdmin",
-        email: process.env.ADMIN_EMAIL,
-        password: passwordEncrypted,
-      });
+			const newAdmin = new superAdminModel({
+				userName: "superAdmin",
+				email: process.env.ADMIN_EMAIL,
+				password: passwordEncrypted,
+			});
 
-      await newAdmin.save();
-      console.log("SuperAdmin created successfully!");
-    } else {
-      console.log("Admin already exists in the database.");
-    }
-  } catch (error) {
-    console.error("Error during admin initialization:", error.message);
-  }
+			await newAdmin.save();
+			console.log("SuperAdmin created successfully!");
+		} else {
+			console.log("Admin already exists in the database.");
+		}
+	} catch (error) {
+		console.error("Error during admin initialization:", error.message);
+	}
 }
 
 // Connect to MongoDB and start server
 mongoose
-  .connect(process.env.DATABASE_Super_Admin)
-  .then(() => {
-    console.log("Connected to MongoDB database");
-    return initializeAdmin();
-  })
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Database connection error:", err.message);
-  });
+	.connect(process.env.DATABASE_Super_Admin)
+	.then(() => {
+		console.log("Connected to MongoDB database");
+		return initializeAdmin();
+	})
+	.then(() => {
+		app.listen(PORT, () => {
+			console.log(`Server running on port ${PORT}`);
+		});
+	})
+	.catch((err) => {
+		console.error("Database connection error:", err.message);
+	});
 
+app.get("/", async (req, res) => {
+	res.json("hello from the backend");
+});

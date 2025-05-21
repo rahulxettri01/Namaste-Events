@@ -24,6 +24,7 @@ class PhotographyDashboard extends StatefulWidget {
 class _PhotographyDashboardState extends State<PhotographyDashboard> {
   late String userStatus;
   late String vendorName;
+  late String vendorEmail;
   Map<String, dynamic> jwtde = {};
   List<dynamic> inventoryList = [];
   bool isLoading = true;
@@ -38,7 +39,9 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
     userStatus = jwtDecodedToken['status'];
     jwtde = jwtDecodedToken;
     vendorName = jwtDecodedToken['vendorName'] ?? 'Unknown Vendor';
-
+    vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
+    print("vendorEmail");
+    print(vendorEmail);
     if (userStatus == "unverified") {
       // If user is unverified, redirect to Pending Request Page
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,8 +59,11 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
   void _decodeToken() {
     try {
       Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
-       userStatus = jwtDecodedToken['status'] ?? 'Unknown';
-    vendorName = jwtDecodedToken['email'] ?? 'Unknown Vendor';
+      userStatus = jwtDecodedToken['status'] ?? 'Unknown';
+      vendorName = jwtDecodedToken['email'] ?? 'Unknown Vendor';
+      vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
+      print("vendorEmail");
+      print(vendorEmail);
     } catch (e) {
       userStatus = 'Unknown';
       vendorName = 'Unknown Vendor';
@@ -225,26 +231,28 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
     try {
       // Debug the API call
       print("Fetching profile for vendor ID: ${jwtde['id']}");
-      
+
       final response = await Api.getVendorProfile(jwtde['id']);
-      
+
       // Debug the response
       print("Vendor profile response: ${json.encode(response)}");
-      
+
       if (response['success'] == true) {
         final vendor = response['vendor'] ?? {};
-        
+
         // Debug the vendor data
         print("Vendor data: ${json.encode(vendor)}");
-        
+
         // Print all keys in the vendor object to help identify the correct field
         print("All vendor keys: ${vendor.keys.toList()}");
-        
+
         setState(() {
           // Update vendor name if available
-          if (vendor['vendorName'] != null && vendor['vendorName'].toString().isNotEmpty) {
+          if (vendor['vendorName'] != null &&
+              vendor['vendorName'].toString().isNotEmpty) {
             vendorName = vendor['vendorName'];
-          } else if (vendor['businessName'] != null && vendor['businessName'].toString().isNotEmpty) {
+          } else if (vendor['businessName'] != null &&
+              vendor['businessName'].toString().isNotEmpty) {
             vendorName = vendor['businessName'];
           }
         });
@@ -384,17 +392,58 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
             ListTile(
               leading: Icon(Icons.calendar_today),
               title: Text('Manage Availability'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VendorAvailabilityPage(
-                      vendorId: jwtde['id'],
-                      vendorType: 'photography',
-                      token: widget.token,
+              onTap: () async {
+                try {
+                  final response = await http.get(
+                    Uri.parse(
+                        '${APIConstants.baseUrl}api/vendorAvailability/available?vendorEmail=$vendorEmail'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  );
+
+                  final data = json.decode(response.body);
+
+                  print("avail check");
+                  print(data);
+
+                  if (data['success'] == true) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VendorAvailabilityPage(
+                          vendorId: jwtde['id'],
+                          vendorType: 'venue',
+                          token: widget.token,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.pop(context); // Close drawer first
+                    ScaffoldMessenger.of(context)
+                        .clearSnackBars(); // Clear existing SnackBars
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Please add inventory first to access this service'),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior
+                            .floating, // Makes it float above other elements
+                        margin: EdgeInsets.all(
+                            8.0), // Adds margin from screen edges
+                        elevation: 6.0, // Increases shadow to stand out more
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Error checking availability: ${e.toString()}'),
+                      backgroundColor: Colors.red,
                     ),
-                  ),
-                );
+                  );
+                }
               },
             ),
             Divider(),
@@ -512,7 +561,7 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
   }
 
   // Custom text field widget matching AddInventory style
-  Widget _entryField(String title, TextEditingController controller, 
+  Widget _entryField(String title, TextEditingController controller,
       {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,7 +585,7 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
             ),
             fillColor: Colors.white,
             filled: true,
-            prefixIcon: title == "Price" 
+            prefixIcon: title == "Price"
                 ? Container(
                     width: 24,
                     alignment: Alignment.center,
@@ -550,7 +599,7 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
                     ),
                   )
                 : Icon(
-                    title == "Photography Name" 
+                    title == "Photography Name"
                         ? Icons.camera_alt
                         : title == "Description"
                             ? Icons.description
@@ -581,9 +630,11 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
                     children: [
                       _entryField("Photography Name", _nameController),
                       SizedBox(height: 15),
-                      _entryField("Description", _descriptionController, maxLines: 3),
+                      _entryField("Description", _descriptionController,
+                          maxLines: 3),
                       SizedBox(height: 15),
-                      _entryField("Price", _priceController, keyboardType: TextInputType.number),
+                      _entryField("Price", _priceController,
+                          keyboardType: TextInputType.number),
                       SizedBox(height: 15),
                       _entryField("Type", _typeController),
                       SizedBox(height: 20),
@@ -600,7 +651,10 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
                           ),
                           child: Text(
                             _isLoading ? "Updating..." : "Update Photography",
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -614,12 +668,12 @@ class _EditInventoryPageState extends State<EditInventoryPage> {
 }
 
 // Add this method to check if an image exists at a URL
-  Future<bool> _checkImageExists(String url) async {
-    try {
-      final response = await http.head(Uri.parse(url));
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (e) {
-      print("Error checking image existence: $e");
-      return false;
-    }
+Future<bool> _checkImageExists(String url) async {
+  try {
+    final response = await http.head(Uri.parse(url));
+    return response.statusCode >= 200 && response.statusCode < 300;
+  } catch (e) {
+    print("Error checking image existence: $e");
+    return false;
   }
+}

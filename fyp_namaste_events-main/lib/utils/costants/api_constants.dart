@@ -2,7 +2,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class APIConstants {
-  static String baseUrl = "http://192.168.1.152"
+  static String baseUrl = "http://192.168.1.140"
       ":2000/";
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();

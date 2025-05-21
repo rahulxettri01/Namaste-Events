@@ -24,6 +24,7 @@ class VendorDashboard extends StatefulWidget {
 class _VendorDashboardState extends State<VendorDashboard> {
   late String userStatus;
   late String vendorName;
+  late String vendorEmail;
   Map<String, dynamic> jwtde = {};
   List<dynamic> inventoryList = [];
   bool isLoading = true;
@@ -35,6 +36,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
     userStatus = jwtDecodedToken['status'];
     jwtde = jwtDecodedToken;
     vendorName = jwtDecodedToken['vendorName'] ?? 'Unknown Vendor';
+    vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
 
     if (userStatus == "unverified") {
       // If user is unverified, redirect to Pending Request Page
@@ -54,6 +56,9 @@ class _VendorDashboardState extends State<VendorDashboard> {
       Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
       userStatus = jwtDecodedToken['status'] ?? 'Unknown';
       vendorName = jwtDecodedToken['vendorName'] ?? 'Unknown Vendor';
+      vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
+      print("vendorEmail");
+      print(vendorEmail);
     } catch (e) {
       userStatus = 'Unknown';
       vendorName = 'Unknown Vendor';
@@ -312,18 +317,51 @@ class _VendorDashboardState extends State<VendorDashboard> {
             Divider(),
             ListTile(
               leading: Icon(Icons.calendar_today),
-              title: Text('Manage Availability'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VendorAvailabilityPage(
-                      vendorId: jwtde['id'],
-                      vendorType: 'venue',
-                      token: widget.token,
+              title: Text('Manage eeeAvailability'),
+              onTap: () async {
+                try {
+                  final response = await http.get(
+                    Uri.parse(
+                        '${APIConstants.baseUrl}api/vendorAvailability/available?vendorEmail=$vendorEmail'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  );
+
+                  final data = json.decode(response.body);
+
+                  print("avail check");
+                  print(data);
+
+                  if (data['success'] == true) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VendorAvailabilityPage(
+                          vendorId: jwtde['id'],
+                          vendorType: 'venue',
+                          token: widget.token,
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Please add inventory first to access this service'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text('Error checking availability: ${e.toString()}'),
+                      backgroundColor: Colors.red,
                     ),
-                  ),
-                );
+                  );
+                }
               },
             ),
             Divider(),

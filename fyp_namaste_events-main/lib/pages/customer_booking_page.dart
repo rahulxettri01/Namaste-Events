@@ -1,13 +1,19 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
+import 'package:fyp_namaste_events/widgets/khalti_webview.dart';
+import 'package:http/http.dart' as http;
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../services/Api/api_vendor_availability.dart';
-import 'package:khalti_flutter/khalti_flutter.dart';
-import 'package:khalti/khalti.dart' as khalti_core; // Add prefix here
-import '../utils/khalti_config.dart'; // Add this import
-import 'package:fyp_namaste_events/utils/khalti_config.dart';
+// Remove these imports if they exist
+// import 'package:khalti_flutter/khalti_flutter.dart';
+// import 'package:khalti/khalti.dart' as khalti_core;
+// import '../utils/khalti_config.dart';
+
+// Keep or add this import
+import 'package:fyp_namaste_events/models/payment_model.dart';
 
 class CustomerBookingPage extends StatefulWidget {
   final String vendorId;
@@ -397,46 +403,61 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
   Future<void> _processBooking(Map<String, dynamic> slot) async {
     setState(() => _isLoading = true);
     try {
-      final amountInPaisa = (slot['totalPrice'] * 100).toInt();
+      final amountInPaisa = (slot['totalPrice']).toInt();
 
-      final config = PaymentConfig(
-        amount: amountInPaisa,
-        productIdentity: 'booking-${DateTime.now().millisecondsSinceEpoch}',
-        productName: '${widget.vendorType} Booking - ${widget.vendorName}',
-        productUrl: 'https://namaste-events.com',
-        additionalData: {
-          'vendor_id': widget.vendorId,
-          'vendor_type': widget.vendorType,
-          'booking_start': _rangeStart.toString(),
-          'booking_end': _rangeEnd.toString(),
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}api/payment/initialize-khalti'),
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: jsonEncode({
+          'itemId': 'asdasfe',
+          'totalPrice': amountInPaisa,
+          // 'website_url': '${APIConstants.baseUrl}api/payment/callback' // Update this with your callback URL
+        }),
       );
 
-      KhaltiScope.of(context).pay(
-        config: config,
-        preferences: [
-          PaymentPreference.khalti,
-          PaymentPreference.eBanking,
-          PaymentPreference.mobileBanking,
-          PaymentPreference.connectIPS,
-        ],
-        onSuccess: (successModel) {
-          _onPaymentSuccess(successModel, slot);
-        },
-        onFailure: (failureModel) {
-          _onPaymentFailure(failureModel);
-          setState(() => _isLoading = false);
-        },
-        onCancel: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment cancelled by user'),
-              backgroundColor: Colors.orange,
+      if (response.statusCode == 200) {
+        final paymentData = jsonDecode(response.body);
+        final paymentUrl = paymentData['paymentInitiate']['payment_url'];
+        final pidx = paymentData['paymentInitiate']['pidx'];
+
+        if (paymentUrl != null && pidx != null) {
+          final paymentResult = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => KhaltiWebView(
+                paymentUrl: paymentUrl,
+                pidx: pidx,
+                onPaymentComplete: (data) {
+                  // Handle payment completion
+                  if (data['status'] == 'Completed') {
+                    _onPaymentSuccess(
+                        PaymentSuccessModel(
+                          pidx: pidx,
+                          transactionId: data['transaction_id'] ?? '',
+                          amount:
+                              int.tryParse(data['amount']?.toString() ?? '0') ??
+                                  0,
+                          mobile: data['mobile'] ?? '',
+                          status: data['status'] ?? 'Failed',
+                        ),
+                        slot);
+                  } else {
+                    _onPaymentFailure(PaymentFailureModel(
+                      message: 'Payment failed: ${data['message']}',
+                    ));
+                  }
+                },
+              ),
             ),
           );
-          setState(() => _isLoading = false);
-        },
-      );
+        } else {
+          throw Exception('Invalid payment URL or PIDX');
+        }
+      } else {
+        throw Exception('Failed to initialize payment');
+      }
     } catch (e) {
       print('Payment Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -445,46 +466,110 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
       setState(() => _isLoading = false);
     }
   }
+  // Future<void> _processBooking(Map<String, dynamic> slot) async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     final amountInPaisa = (slot['totalPrice'] * 100).toInt();
+
+  //     final config = PaymentConfig(
+  //       amount: amountInPaisa,
+  //       productIdentity: 'booking-${DateTime.now().millisecondsSinceEpoch}',
+  //       productName: '${widget.vendorType} Booking - ${widget.vendorName}',
+  //       productUrl: 'https://namaste-events.com',
+  //       additionalData: {
+  //         'vendor_id': widget.vendorId,
+  //         'vendor_type': widget.vendorType,
+  //         'booking_start': _rangeStart.toString(),
+  //         'booking_end': _rangeEnd.toString(),
+  //       },
+  //     );
+
+  //     KhaltiScope.of(context).pay(
+  //       config: config,
+  //       preferences: [
+  //         PaymentPreference.khalti,
+  //         PaymentPreference.eBanking,
+  //         PaymentPreference.mobileBanking,
+  //         PaymentPreference.connectIPS,
+  //       ],
+  //       onSuccess: (successModel) {
+  //         _onPaymentSuccess(successModel, slot);
+  //       },
+  //       onFailure: (failureModel) {
+  //         _onPaymentFailure(failureModel);
+  //         setState(() => _isLoading = false);
+  //       },
+  //       onCancel: () {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           const SnackBar(
+  //             content: Text('Payment cancelled by user'),
+  //             backgroundColor: Colors.orange,
+  //           ),
+  //         );
+  //         setState(() => _isLoading = false);
+  //       },
+  //     );
+  //   } catch (e) {
+  //     print('Payment Error: $e');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Payment initialization failed: ${e.toString()}'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   void _onPaymentSuccess(
       PaymentSuccessModel success, Map<String, dynamic> slot) async {
     try {
+      print("on payment success slot data");
+      print(slot);
       // Add payment details to the slot
       slot['paymentDetails'] = {
-        'token': success.token,
+        'pidx': success.pidx,
+        'transactionId': success.transactionId,
         'amount': success.amount,
         'mobile': success.mobile,
-        'productIdentity': success.productIdentity,
-        'productName': success.productName,
+        'status': success.status,
         'paymentStatus': 'Completed',
         'transactionDate': DateTime.now().toIso8601String(),
       };
 
-      // Create booking with payment details
-      final bookingResponse = await ApiVendorAvailability.createBooking(
-        slot,
-        widget.token,
+      // Verify payment status from backend
+      final verificationResponse = await http.get(
+        Uri.parse('${APIConstants.baseUrl}api/payment/verify/${success.pidx}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${widget.token}',
+        },
       );
 
-      if (bookingResponse['status'] == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment successful and booking confirmed!'),
-            backgroundColor: Colors.green,
-          ),
+      if (verificationResponse.statusCode == 200) {
+        // Create booking with payment details
+        final bookingResponse = await ApiVendorAvailability.createBooking(
+          slot,
+          widget.token,
         );
-        Navigator.pop(context, true);
+
+        if (bookingResponse['status'] == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment successful and booking confirmed!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true);
+        } else {
+          throw Exception('Booking creation failed');
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Payment successful but booking failed. Please contact support.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        throw Exception('Payment verification failed');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -495,6 +580,52 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
       );
     }
   }
+  // void _onPaymentSuccess(
+  //     PaymentSuccessModel success, Map<String, dynamic> slot) async {
+  //   try {
+  //     // Add payment details to the slot
+  //     slot['paymentDetails'] = {
+  //       'token': success.token,
+  //       'amount': success.amount,
+  //       'mobile': success.mobile,
+  //       'productIdentity': success.productIdentity,
+  //       'productName': success.productName,
+  //       'paymentStatus': 'Completed',
+  //       'transactionDate': DateTime.now().toIso8601String(),
+  //     };
+
+  //     // Create booking with payment details
+  //     final bookingResponse = await ApiVendorAvailability.createBooking(
+  //       slot,
+  //       widget.token,
+  //     );
+
+  //     if (bookingResponse['status'] == 201) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Payment successful and booking confirmed!'),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //       Navigator.pop(context, true);
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(
+  //               'Payment successful but booking failed. Please contact support.'),
+  //           backgroundColor: Colors.orange,
+  //         ),
+  //       );
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Error processing payment: ${e.toString()}'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
   void _onPaymentFailure(PaymentFailureModel failure) {
     ScaffoldMessenger.of(context).showSnackBar(
