@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:fyp_namaste_events/pages/VendorsPage.dart';
+import 'package:fyp_namaste_events/pages/notification_page.dart';
 import 'package:fyp_namaste_events/pages/vendor_detail_page.dart';
+import 'package:fyp_namaste_events/utils/shared_preferences.dart';
 import 'package:fyp_namaste_events/utils/theme/custom_themes/text_theme.dart';
 import 'package:fyp_namaste_events/pages/login_register_page.dart';
 import '../components/bottom_nav_bar.dart';
 import '../services/Api/vendorService.dart';
 import '../utils/costants/api_constants.dart';
 import 'package:fyp_namaste_events/pages/vendor_list_page.dart';
+
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -26,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> photographers = [];
   List<dynamic> decorations = [];
   bool isLoading = true;
+  int _unreadNotificationCount = 0; // Add this to track unread notifications
 
   // Add featuredCategories list
   final List<Map<String, dynamic>> featuredCategories = [
@@ -155,13 +159,20 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Sign-out function
-  void signOut(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-    );
-  }
+// In your logout function
+void logout() async {
+  // Set the logout flag
+  await SharedPreferencesService.setWasLoggedOut(true);
+  
+  // Clear token and user data
+  await SharedPreferencesService.clearAll();
+  
+  // Navigate to login page
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => const LoginPage()),
+    (route) => false, // This removes all previous routes
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +223,52 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+            ),
+            // Add notification icon with badge
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    // Navigate to notification page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationPage(),
+                      ),
+                    ).then((_) {
+                      // Reset badge count after returning from notification page
+                      setState(() {
+                        _unreadNotificationCount = 0;
+                      });
+                    });
+                  },
+                ),
+                if (_unreadNotificationCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        _unreadNotificationCount > 9 ? '9+' : _unreadNotificationCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -969,6 +1026,7 @@ Widget _buildHorizontalScrollWithButtons(
             },
           ),
         ),
+
 
         // Left scroll button
         if (items.isNotEmpty)

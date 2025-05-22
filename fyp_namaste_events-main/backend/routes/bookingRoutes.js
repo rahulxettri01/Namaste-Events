@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { bookingModel } = require("../models/booking");
 const VerifyJWT = require("../middleware/VerifyJWT");
+const notificationService = require("../services/notificationService");
 
 // Create a new booking
 router.post("/create", VerifyJWT, async (req, res) => {
@@ -20,6 +21,15 @@ router.post("/create", VerifyJWT, async (req, res) => {
     });
 
     const savedBooking = await booking.save();
+    
+    // Create notifications for both user and vendor
+    try {
+      await notificationService.createBookingNotification(savedBooking);
+    } catch (notifError) {
+      console.error("Error creating booking notifications:", notifError);
+      // Continue with the response even if notification creation fails
+    }
+    
     res.status(201).json(savedBooking);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -64,9 +74,39 @@ router.put("/update-status/:bookingId", VerifyJWT, async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
+    const oldStatus = booking.bookingStatus;
     booking.bookingStatus = req.body.status;
     booking.updatedAt = Date.now();
     const updatedBooking = await booking.save();
+    
+    // Create notification for status change
+    try {
+      // Notification for the user
+      await notificationService.createNotification({
+        userId: booking.userId,
+        title: "Booking Status Updated",
+        message: `Your booking status has been updated from ${oldStatus} to ${updatedBooking.bookingStatus}.`,
+        type: "booking",
+        relatedId: booking._id,
+        onModel: "Booking"
+      });
+      
+      // If the update was made by the user, also notify the vendor
+      if (req.user.id === booking.userId.toString()) {
+        await notificationService.createNotification({
+          userId: booking.vendorId,
+          title: "Booking Status Updated",
+          message: `A booking status has been updated from ${oldStatus} to ${updatedBooking.bookingStatus}.`,
+          type: "booking",
+          relatedId: booking._id,
+          onModel: "Booking"
+        });
+      }
+    } catch (notifError) {
+      console.error("Error creating status update notification:", notifError);
+      // Continue with the response even if notification creation fails
+    }
+    
     res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -81,10 +121,40 @@ router.put("/update-payment/:bookingId", VerifyJWT, async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    const oldPaymentStatus = booking.paymentStatus;
+    const oldPaidAmount = booking.paidAmount;
+    
     booking.paymentStatus = req.body.paymentStatus;
     booking.paidAmount = req.body.paidAmount;
     booking.updatedAt = Date.now();
     const updatedBooking = await booking.save();
+    
+    // Create notification for payment update
+    try {
+      // Notification for the user
+      await notificationService.createNotification({
+        userId: booking.userId,
+        title: "Payment Status Updated",
+        message: `Your payment status has been updated from ${oldPaymentStatus} to ${updatedBooking.paymentStatus}. Amount paid: Rs. ${updatedBooking.paidAmount}`,
+        type: "payment",
+        relatedId: booking._id,
+        onModel: "Booking"
+      });
+      
+      // Notification for the vendor
+      await notificationService.createNotification({
+        userId: booking.vendorId,
+        title: "Payment Received",
+        message: `Payment received for booking. Status updated from ${oldPaymentStatus} to ${updatedBooking.paymentStatus}. Amount: Rs. ${updatedBooking.paidAmount - oldPaidAmount}`,
+        type: "payment",
+        relatedId: booking._id,
+        onModel: "Booking"
+      });
+    } catch (notifError) {
+      console.error("Error creating payment update notification:", notifError);
+      // Continue with the response even if notification creation fails
+    }
+    
     res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -106,6 +176,33 @@ router.put("/cancel/:bookingId", VerifyJWT, async (req, res) => {
     booking.bookingStatus = 'cancelled';
     booking.updatedAt = Date.now();
     const updatedBooking = await booking.save();
+    
+    // Create cancellation notifications
+    try {
+      // Notification for the user
+      await notificationService.createNotification({
+        userId: booking.userId,
+        title: "Booking Cancelled",
+        message: `Your booking for ${booking.eventDetails.eventType} on ${new Date(booking.eventDetails.eventDate).toLocaleDateString()} has been cancelled.`,
+        type: "booking",
+        relatedId: booking._id,
+        onModel: "Booking"
+      });
+      
+      // Notification for the vendor
+      await notificationService.createNotification({
+        userId: booking.vendorId,
+        title: "Booking Cancelled",
+        message: `A booking for ${booking.eventDetails.eventType} on ${new Date(booking.eventDetails.eventDate).toLocaleDateString()} has been cancelled by the user.`,
+        type: "booking",
+        relatedId: booking._id,
+        onModel: "Booking"
+      });
+    } catch (notifError) {
+      console.error("Error creating cancellation notification:", notifError);
+      // Continue with the response even if notification creation fails
+    }
+    
     res.json(updatedBooking);
   } catch (error) {
     res.status(500).json({ error: error.message });

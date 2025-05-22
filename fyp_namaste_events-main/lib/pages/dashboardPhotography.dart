@@ -39,7 +39,8 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
     userStatus = jwtDecodedToken['status'];
     jwtde = jwtDecodedToken;
     vendorName = jwtDecodedToken['vendorName'] ?? 'Unknown Vendor';
-    vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
+    vendorEmail = jwtDecodedToken['email'] ?? 'Unknown Vendor';
+    print(jwtDecodedToken);
     print("vendorEmail");
     print(vendorEmail);
     if (userStatus == "unverified") {
@@ -61,7 +62,7 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
       Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(widget.token);
       userStatus = jwtDecodedToken['status'] ?? 'Unknown';
       vendorName = jwtDecodedToken['email'] ?? 'Unknown Vendor';
-      vendorEmail = jwtDecodedToken['vendorEmail'] ?? 'Unknown Vendor';
+      vendorEmail = jwtDecodedToken['email'] ?? 'Unknown Vendor';
       print("vendorEmail");
       print(vendorEmail);
     } catch (e) {
@@ -396,7 +397,7 @@ class _PhotographyDashboardState extends State<PhotographyDashboard> {
                 try {
                   final response = await http.get(
                     Uri.parse(
-                        '${APIConstants.baseUrl}api/vendorAvailability/available?vendorEmail=$vendorEmail'),
+                        '${APIConstants.baseUrl}api/vendorAvailability/exist?vendorEmail=$vendorEmail'),
                     headers: {
                       'Content-Type': 'application/json',
                     },

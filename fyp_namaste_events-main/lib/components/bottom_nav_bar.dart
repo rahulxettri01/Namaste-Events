@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fyp_namaste_events/pages/BookingListPage.dart';
 import 'package:fyp_namaste_events/pages/ProfilePage.dart';
 import 'package:fyp_namaste_events/pages/VendorsPage.dart';
-import 'package:fyp_namaste_events/pages/bookingPage.dart';
+import 'package:fyp_namaste_events/pages/chat_page.dart';
 import 'package:fyp_namaste_events/pages/home_page.dart';
 
 class BottomNavBar extends StatefulWidget {
@@ -45,9 +45,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) =>
-                        HomePage(
-                      token: widget.token,
-                    ),
+                        HomePage(token: widget.token),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder:
                         (context, animation, secondaryAnimation, child) {
@@ -64,9 +62,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) =>
-                        VendorsPage(
-                      token: widget.token,
-                    ),
+                        VendorsPage(token: widget.token),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder:
                         (context, animation, secondaryAnimation, child) {
@@ -83,7 +79,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) =>
-                        const BookingListPage(),
+                        BookingListPage(token: widget.token),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder:
                         (context, animation, secondaryAnimation, child) {
@@ -96,16 +92,28 @@ class _BottomNavBarState extends State<BottomNavBar> {
                 );
                 break;
               case 3:
-                Navigator.pushNamed(context, '/notifications');
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        ChatPage(token: widget.token),
+                    transitionDuration: const Duration(milliseconds: 500),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                  ),
+                );
                 break;
               case 4:
                 Navigator.push(
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) =>
-                        ProfilePage(
-                      token: widget.token,
-                    ),
+                        ProfilePage(token: widget.token),
                     transitionDuration: const Duration(milliseconds: 500),
                     transitionsBuilder:
                         (context, animation, secondaryAnimation, child) {
@@ -126,7 +134,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
             BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_today), label: "Bookings"),
             BottomNavigationBarItem(
-                icon: Icon(Icons.notifications), label: "Notifications"),
+                icon: Icon(Icons.chat_bubble), label: "Chat"),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
           ],
           backgroundColor: const Color(0xFF0A1931),

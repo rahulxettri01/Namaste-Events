@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { AvailabilityModel } = require("../models/availability");
+const { photographyModel } = require("../models/vendor");
 const VerifyJWT = require("../middleware/VerifyJWT");
 const { connectInventoryDB } = require("../Config/DBconfig");
 const { vendorModel } = require("../models/vendor");
@@ -85,6 +86,31 @@ router.get("/available", async (req, res) => {
 		await connectInventoryDB(async () => {
 			availability = await AvailabilityModel.find({
 				vendorEmail,
+			}).sort({ date: 1 });
+		});
+		console.log(availability);
+
+		if (availability && availability.length > 0) {
+			res.json({ success: true, data: availability });
+		} else {
+			res.json({ success: false, message: "No availability found" });
+		}
+	} catch (error) {
+		res.status(500).json({
+			success: false,
+			message: `Error fetching availability: ${error.message}`,
+		});
+	}
+});
+router.get("/exist", async (req, res) => {
+	try {
+		const { vendorEmail } = req.query;
+		console.log("ven", vendorEmail);
+
+		let availability;
+		await connectInventoryDB(async () => {
+			availability = await photographyModel.find({
+			owner: vendorEmail,
 			}).sort({ date: 1 });
 		});
 		console.log(availability);

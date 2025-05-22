@@ -7,6 +7,7 @@ import 'package:fyp_namaste_events/services/Api/api_authentication.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   final String token;
@@ -105,12 +106,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _logout() async {
     try {
-      // Clear any stored tokens or user data
+      // Set the logout flag to true
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Clear all user data from SharedPreferences
+      await prefs.remove('userData');
+      await prefs.remove('FrontToken');
+      
+      // Clear any stored tokens using APIConstants
       await APIConstants.clearToken();
-
-      // Navigate to login page
-      Navigator.of(context).pushReplacement(
+      
+      // Force clear any other potential storage locations
+      await prefs.clear();
+      
+      // Navigate to login page and remove all previous routes
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false, // This removes all previous routes from the stack
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

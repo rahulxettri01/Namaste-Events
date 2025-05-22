@@ -35,6 +35,7 @@ const otpRoutes = require("./routes/otpRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const VendorAvailabilityRoutes = require("./routes/vendorAvailability");
 const paymentRoutes = require("./routes/paymentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes"); // Add this line
 
 // Register all routes
 app.use("/api/vendorAvailability", VendorAvailabilityRoutes);
@@ -48,6 +49,7 @@ app.use("/images", imageRoutes);
 app.use("/inventory", inventoryRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/notifications", notificationRoutes); // Add this line
 
 // Function to initialize admin if not exists
 async function initializeAdmin() {

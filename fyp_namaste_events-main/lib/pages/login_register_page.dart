@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -88,7 +89,16 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
 
+            // Save token
             prefs.setString("FrontToken", newToken);
+            
+            // Save admin user data
+            prefs.setString("userData", json.encode({
+              "id": response["id"] ?? "",
+              "email": _controllerEmail.text,
+              "role": "Super Admin",
+            }));
+            
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -124,7 +134,25 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
 
+            // Save token
             prefs.setString("FrontToken", newToken);
+            
+            // Save user data
+            Map<String, dynamic> userData = {
+              "id": response["userId"] ?? "",
+              "email": _controllerEmail.text,
+              "role": role,
+              "status": response["status"] ?? "",
+            };
+            
+            // Add any additional user data from the response
+            if (response["name"] != null) {
+              userData["name"] = response["name"];
+            }
+            
+            // Save the user data as a JSON string
+            prefs.setString("userData", json.encode(userData));
+            
             if (role == "Vendor") {
               Navigator.pushReplacement(
                 context,
