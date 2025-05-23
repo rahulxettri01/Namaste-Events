@@ -423,35 +423,42 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         final pidx = paymentData['paymentInitiate']['pidx'];
 
         if (paymentUrl != null && pidx != null) {
-          final paymentResult = await Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => KhaltiWebView(
                 paymentUrl: paymentUrl,
                 pidx: pidx,
-                onPaymentComplete: (data) {
-                  // Handle payment completion
-                  if (data['status'] == 'Completed') {
+                onPaymentComplete: (data) async {
+                  print('Payment completion data received:');
+                  print(data);
+                  if (data['success'] == true) {
+                    // Convert amount to int before passing
+                    final amount =
+                        (double.tryParse(data['amount']?.toString() ?? '0') ??
+                                0)
+                            .toInt();
+
                     _onPaymentSuccess(
-                        PaymentSuccessModel(
-                          pidx: pidx,
-                          transactionId: data['transaction_id'] ?? '',
-                          amount:
-                              int.tryParse(data['amount']?.toString() ?? '0') ??
-                                  0,
-                          mobile: data['mobile'] ?? '',
-                          status: data['status'] ?? 'Failed',
-                        ),
-                        slot);
-                  } else {
-                    _onPaymentFailure(PaymentFailureModel(
-                      message: 'Payment failed: ${data['message']}',
-                    ));
+                      PaymentSuccessModel(
+                        pidx: data['pidx'] ?? '',
+                        transactionId: data['transactionId'] ?? '',
+                        amount: amount,
+                        mobile: data['mobile'] ?? '',
+                        status: 'Completed',
+                      ),
+                      slot,
+                    );
+                    return; // Add return statement
                   }
+                  _onPaymentFailure(PaymentFailureModel(
+                    message: data['message'] ?? 'Payment was not completed',
+                  ));
                 },
               ),
             ),
           );
+          print("after the in app: paymentResult");
         } else {
           throw Exception('Invalid payment URL or PIDX');
         }
@@ -528,8 +535,8 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
   void _onPaymentSuccess(
       PaymentSuccessModel success, Map<String, dynamic> slot) async {
     try {
-      print("on payment success slot data");
-      print(slot);
+      print("Processing payment success...");
+
       // Add payment details to the slot
       slot['paymentDetails'] = {
         'pidx': success.pidx,
@@ -541,43 +548,37 @@ class _CustomerBookingPageState extends State<CustomerBookingPage> {
         'transactionDate': DateTime.now().toIso8601String(),
       };
 
-      // Verify payment status from backend
-      final verificationResponse = await http.get(
-        Uri.parse('${APIConstants.baseUrl}api/payment/verify/${success.pidx}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
-        },
+      print("Creating booking with payment details...");
+      final bookingResponse = await ApiVendorAvailability.createBooking(
+        slot,
+        widget.token,
       );
 
-      if (verificationResponse.statusCode == 200) {
-        // Create booking with payment details
-        final bookingResponse = await ApiVendorAvailability.createBooking(
-          slot,
-          widget.token,
+      if (bookingResponse['_id'].toString().isNotEmpty) {
+        print("Booking created successfully");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking confirmed successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
-
-        if (bookingResponse['status'] == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Payment successful and booking confirmed!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pop(context, true);
-        } else {
-          throw Exception('Booking creation failed');
-        }
+        // Navigate back to previous screen with success result
+        Navigator.of(context).pop(true);
       } else {
-        throw Exception('Payment verification failed');
+        throw Exception(
+            bookingResponse['message'] ?? 'Booking creation failed');
       }
     } catch (e) {
+      print("Error in payment success handler: $e");
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error processing payment: ${e.toString()}'),
+          content: Text('Booking failed: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
+      // Navigate back with failure result
+      Navigator.of(context).pop(false);
     }
   }
   // void _onPaymentSuccess(

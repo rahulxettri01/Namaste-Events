@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -26,6 +28,56 @@ class _KhaltiWebViewState extends State<KhaltiWebView> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'PaymentChannel',
+        onMessageReceived: (JavaScriptMessage message) {
+          print('Received payment data: ${message.message}');
+          try {
+            print("in the in in in");
+            final paymentData = jsonDecode(message.message);
+
+            print('Decoded payment data: $paymentData');
+            print(paymentData);
+            if (paymentData['success'] == true &&
+                paymentData['status'] == 'completed') {
+              Navigator.pop(context);
+
+              widget.onPaymentComplete({
+                'success': true,
+                'pidx': paymentData['pidx'],
+                'transactionId': paymentData['transactionId'],
+                'status': 'Completed',
+                'amount': paymentData['amount'],
+                'mobile': paymentData['mobile'],
+                'paymentMethod': paymentData['paymentMethod']
+              });
+            } else if (paymentData['status'] == 'Cancelled') {
+              Navigator.pop(context);
+              widget.onPaymentComplete({
+                'success': false,
+                'status': 'Cancelled',
+                'message': 'Payment cancelled by user'
+              });
+            } else {
+              Navigator.pop(context);
+              widget.onPaymentComplete({
+                'success': false,
+                'status': 'Failed',
+                'message': paymentData['message'] ?? 'Payment failed'
+              });
+            }
+          } catch (e) {
+            print('Error processing payment data: $e');
+            print(e);
+            Navigator.pop(context);
+            widget.onPaymentComplete({
+              'success': false,
+              'status': 'Failed',
+              'message': 'Error processing payment data'
+            });
+          }
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -33,26 +85,30 @@ class _KhaltiWebViewState extends State<KhaltiWebView> {
           },
           onPageFinished: (String url) {
             setState(() => isLoading = false);
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            if (request.url.contains('payment/callback')) {
-              // Extract data from URL
-              final uri = Uri.parse(request.url);
+            if (url.contains('api/payment/khalti-callback')) {
+              final uri = Uri.parse(url);
               final queryParams = uri.queryParameters;
 
-              // Close WebView and return data
               Navigator.pop(context);
               widget.onPaymentComplete({
-                'status': queryParams['status'],
-                'token': queryParams['token'],
-                'amount': int.tryParse(queryParams['amount'] ?? '0'),
-                'mobile': queryParams['mobile'],
-                'productIdentity': queryParams['productIdentity'],
-                'productName': queryParams['productName'],
-                'message': queryParams['message'],
+                'success': true,
+                'pidx': queryParams['pidx'] ?? '',
+                'transactionId': queryParams['transaction_id'] ?? '',
+                'status': 'Completed',
+                'amount': queryParams['amount'] ?? '0',
+                'mobile': queryParams['mobile'] ?? '',
+                'paymentMethod': queryParams['payment_method'] ?? ''
               });
-              return NavigationDecision.prevent;
             }
+
+            _controller.runJavaScript('''
+              window.addEventListener('message', function(event) {
+                console.log('Payment event received:', event.data);
+                PaymentChannel.postMessage(JSON.stringify(event.data));
+              });
+            ''');
+          },
+          onNavigationRequest: (NavigationRequest request) {
             return NavigationDecision.navigate;
           },
         ),
@@ -67,7 +123,14 @@ class _KhaltiWebViewState extends State<KhaltiWebView> {
         title: Text('Khalti Payment'),
         leading: IconButton(
           icon: Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pop(context);
+            widget.onPaymentComplete({
+              'success': true,
+              'status': 'Cancelled',
+              'message': 'Payment cancelled by user'
+            });
+          },
         ),
       ),
       body: Stack(
