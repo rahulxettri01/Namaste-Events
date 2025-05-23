@@ -13,7 +13,7 @@ const {
 } = require("../Config/multerConfig");
 const { diskStorage } = require("multer");
 const VerifyJWT = require("../middleware/VerifyJWT");
-// const { Ruleset } = require("firebase-admin/security-rules");
+
 const jwtExpiryMinute = 60;
 const {
   docImageModel,
@@ -21,10 +21,11 @@ const {
   venueImageModel,
   decorationImageModel,
 } = require("../models/image");
-
+const { sendMail, sendVendorOTPEmail, sendVendorPasswordResetConfirmationEmail } = require('../middleware/sendMail');
 const vendorData = [];
 // POST API to add vendor signup details
 router.post("/sign_up", async (req, res) => {
+  
   const vdata = {
     vendorName: req.body.vendorName,
     email: req.body.email,
@@ -607,6 +608,9 @@ router.post("/vendors/forgot-password", async (req, res) => {
   }
 });
 // Forgot password - check email and send OTP
+// Update the import at the top of the file
+
+
 router.post("/vendor/forgot-password", async (req, res) => {
   const { email } = req.body;
   
@@ -643,9 +647,9 @@ router.post("/vendor/forgot-password", async (req, res) => {
       });
     });
 
-    // Send OTP via email
+    // Send OTP via email using the new function
     try {
-      await sendOTPEmail(email, otp, "Vendor Password Reset");
+      await sendVendorOTPEmail(email, vendor.vendorName, otp);
       console.log(`OTP sent to ${email}: ${otp}`);
     } catch (emailErr) {
       console.error("Error sending email:", emailErr);

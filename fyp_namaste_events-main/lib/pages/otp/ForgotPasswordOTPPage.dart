@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:developer'; // Add this import for log function
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fyp_namaste_events/pages/login_register_page.dart';
 
 import 'package:fyp_namaste_events/services/Api/api_authentication.dart';
+import 'package:fyp_namaste_events/utils/shared_preferences.dart';
 
 class ForgotPasswordOTPPage extends StatefulWidget {
   final String userId;
@@ -202,6 +204,23 @@ class _ForgotPasswordOTPPageState extends State<ForgotPasswordOTPPage>
       );
 
       if (response != null && response["status_code"] == 200) {
+        // Save the password reset time
+        final now = DateTime.now();
+        await SharedPreferencesService.setLastPasswordResetTime(now);
+        
+        // Save to notification history
+        await SharedPreferencesService.saveNotificationHistory({
+          'id': 'pwd_reset_${now.millisecondsSinceEpoch}',
+          'type': 'security',
+          'title': 'Password Reset',
+          'body': 'Your password was reset successfully',
+          'createdAt': now.toIso8601String(),
+          'isRead': false
+        });
+        
+        // Send email notification to user
+        await _sendPasswordResetEmail(widget.email);
+        
         setState(() {
           _isLoading = false;
         });
@@ -239,6 +258,33 @@ class _ForgotPasswordOTPPageState extends State<ForgotPasswordOTPPage>
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
+  }
+
+  // Update the _sendPasswordResetEmail method to handle errors gracefully
+  Future<void> _sendPasswordResetEmail(String email) async {
+    try {
+
+      log('Attempting to send password reset email to: $email');
+      
+      try {
+        final result = await Api.sendPasswordResetConfirmationEmail(email);
+        log('Password reset email result: $result');
+        
+        if (result['success'] == true) {
+          log('Password reset confirmation email sent successfully');
+        } else {
+          log('Failed to send password reset email: ${result['message']}');
+          // Continue with password reset even if email fails
+        }
+      } catch (e) {
+        // If the API endpoint doesn't exist yet, log it but don't block the flow
+        log('API endpoint for password reset email not available: $e');
+      }
+    } catch (e) {
+      log('Error sending password reset email: $e');
+      // We don't want to block the password reset process if email fails
+      // So we just log the error and continue
+    }
   }
 
   Future<void> _resendOTP() async {

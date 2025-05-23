@@ -56,9 +56,20 @@ class _VendorResetPasswordPageState extends State<VendorResetPasswordPage> {
       });
 
       if (response?['success'] == true) {
+        // Try to send confirmation email
+        try {
+          await Api.sendVendorPasswordResetConfirmationEmail(widget.email);
+        } catch (emailError) {
+          debugPrint('Error sending confirmation email: $emailError');
+          // Continue even if email sending fails
+        }
+        
         // Show success message and navigate to login page
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password reset successful. Please login with your new password.')),
+          const SnackBar(
+            content: Text('Password reset successful. Please login with your new password.'),
+            backgroundColor: Colors.green,
+          ),
         );
         
         Navigator.pushAndRemoveUntil(

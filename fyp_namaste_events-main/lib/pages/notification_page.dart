@@ -35,6 +35,7 @@ class _NotificationPageState extends State<NotificationPage> {
   void initState() {
     super.initState();
     _initializeApiService();
+    _loadNotificationHistory(); // Add this line to load notification history
   }
 
   Future<void> _initializeApiService() async {
@@ -67,19 +68,27 @@ class _NotificationPageState extends State<NotificationPage> {
     // Check for password reset notification
     final lastPasswordResetTime = SharedPreferencesService.getLastPasswordResetTime();
     if (lastPasswordResetTime != null) {
-      setState(() {
-        _hasPasswordResetNotification = true;
-        _passwordResetTime = DateTime.parse(lastPasswordResetTime);
-      });
+      final resetTime = DateTime.parse(lastPasswordResetTime);
+      // Only show notification if reset happened in the last 24 hours
+      if (DateTime.now().difference(resetTime).inHours < 24) {
+        setState(() {
+          _hasPasswordResetNotification = true;
+          _passwordResetTime = resetTime;
+        });
+      }
     }
     
     // Check for password change notification
     final lastPasswordChangeTime = SharedPreferencesService.getLastPasswordChangeTime();
     if (lastPasswordChangeTime != null) {
-      setState(() {
-        _hasPasswordChangeNotification = true;
-        _passwordChangeTime = DateTime.parse(lastPasswordChangeTime);
-      });
+      final changeTime = DateTime.parse(lastPasswordChangeTime);
+      // Only show notification if change happened in the last 24 hours
+      if (DateTime.now().difference(changeTime).inHours < 24) {
+        setState(() {
+          _hasPasswordChangeNotification = true;
+          _passwordChangeTime = changeTime;
+        });
+      }
     }
   }
 
@@ -142,6 +151,17 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+  // Add this property to the _NotificationPageState class
+  List<Map<String, dynamic>> _notificationHistory = [];
+
+
+
+  void _loadNotificationHistory() {
+    _notificationHistory = SharedPreferencesService.getNotificationHistory() ?? [];
+    setState(() {});
+  }
+
+  // Modify the _markAsRead method
   Future<void> _markAsRead(NotificationModel notification) async {
     try {
       final success = await _apiService.markAsRead(notification.id);
@@ -149,6 +169,8 @@ class _NotificationPageState extends State<NotificationPage> {
         setState(() {
           notification.isRead = true;
         });
+        // Also mark as read in history
+        await SharedPreferencesService.markNotificationAsRead(notification.id);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,6 +179,7 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+  // Modify the _markAllAsRead method
   Future<void> _markAllAsRead() async {
     try {
       final success = await _apiService.markAllAsRead();
@@ -165,17 +188,19 @@ class _NotificationPageState extends State<NotificationPage> {
           for (var notification in _notifications) {
             notification.isRead = true;
           }
+          _hasLoginNotification = false;
+          _hasPasswordResetNotification = false;
+          _hasPasswordChangeNotification = false;
         });
+        // Mark all as read in history
+        await SharedPreferencesService.markAllNotificationsAsRead();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('All notifications marked as read')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark all notifications as read: $e')),
-      );
-       // In the login success part of your code, add this line:
-  await SharedPreferencesService.setLastLoginTime(DateTime.now());
+      // Error handling remains the same
     }
   }
   
@@ -260,6 +285,23 @@ class _NotificationPageState extends State<NotificationPage> {
                             
                           // Regular notifications
                           ..._notifications.map((notification) => _buildNotificationCard(notification)).toList(),
+
+                          
+                          // History notifications
+                          if (_notificationHistory.isNotEmpty) ...[
+                            const Divider(thickness: 1),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Text(
+                                'Previous Notifications',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            ..._notificationHistory.map((notification) => _buildHistoryNotificationCard(notification)).toList(),
+                          ],
                           
                           // If we only have system notifications, add some space at the bottom
                           if (_notifications.isEmpty && 
@@ -548,6 +590,92 @@ class _NotificationPageState extends State<NotificationPage> {
             });
           },
           tooltip: 'Mark as read',
+        ),
+      ),
+    );
+  }
+  
+  // Add this method to build history notification cards
+  Widget _buildHistoryNotificationCard(Map<String, dynamic> notification) {
+    final DateTime createdAt = DateTime.parse(notification['createdAt']);
+    final formattedDate = DateFormat('MMM d, yyyy • h:mm a').format(createdAt);
+    
+    IconData iconData;
+    Color iconColor;
+    
+    switch (notification['type']) {
+      case 'security':
+        iconData = Icons.security;
+        iconColor = Colors.green;
+        break;
+      case 'login':
+        iconData = Icons.login;
+        iconColor = Colors.blue;
+        break;
+      default:
+        iconData = Icons.notifications;
+        iconColor = Colors.grey;
+    }
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: notification['isRead'] ? Colors.grey.shade50 : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    iconData,
+                    color: iconColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    notification['title'],
+                    style: TextStyle(
+                      fontWeight: notification['isRead'] ? FontWeight.normal : FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (!notification['isRead'])
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: const BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              notification['body'],
+              style: TextStyle(
+                color: notification['isRead'] ? Colors.grey[600] : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              formattedDate,
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
     );

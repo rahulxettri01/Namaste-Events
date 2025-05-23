@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:fyp_namaste_events/components/bottom_nav_bar.dart';
 import 'package:fyp_namaste_events/services/Api/api_authentication.dart';
+import 'package:fyp_namaste_events/utils/shared_preferences.dart'; // Add this import if not already there
 import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 
@@ -69,34 +71,45 @@ class _UserChangePasswordPageState extends State<UserChangePasswordPage> {
       );
 
       if (response['success'] == true) {
-        // Password changed successfully
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password changed successfully')),
-        );
-        Navigator.pop(context);
-      } else {
-        setState(() {
-          // Display the specific error message from the server
-          _errorMessage = response['message'] ?? 'Failed to change password';
+        // Set the password change time
+        final now = DateTime.now();
+        await SharedPreferencesService.setLastPasswordChangeTime(now);
+        
+        // Save to notification history
+        await SharedPreferencesService.saveNotificationHistory({
+          'id': 'pwd_change_${now.millisecondsSinceEpoch}',
+          'type': 'security',
+          'title': 'Password Changed',
+          'body': 'Your password was changed successfully',
+          'createdAt': now.toIso8601String(),
+          'isRead': false
         });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password changed successfully')),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = response['message'] ?? 'Failed to change password';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        // Improved error message that might include HTTP status codes
-        if (e.toString().contains('404')) {
-          _errorMessage = 'Server Error: 404 Not Found. The server endpoint could not be reached.';
-        } else if (e.toString().contains('401')) {
-          _errorMessage = 'Authentication Error: Your session may have expired. Please log in again.';
-        } else if (e.toString().contains('500')) {
-          _errorMessage = 'Server Error: The server encountered an internal error. Please try again later.';
-        } else {
+      if (mounted) {
+        setState(() {
           _errorMessage = 'Error: ${e.toString()}';
-        }
-      });
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

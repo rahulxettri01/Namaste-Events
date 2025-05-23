@@ -63,11 +63,12 @@ class SharedPreferencesService {
   // Add these methods to your SharedPreferencesService class
 
   // Store the last password reset time
-  static Future<void> setLastPasswordResetTime(DateTime resetTime) async {
-    await _prefs?.setString('last_password_reset_time', resetTime.toIso8601String());
+  // Add this method if it doesn't exist
+  static Future<void> setLastPasswordResetTime(DateTime time) async {
+    await _prefs?.setString('last_password_reset_time', time.toIso8601String());
   }
-
-  // Get the last password reset time
+  
+  // Add this method if it doesn't exist
   static String? getLastPasswordResetTime() {
     return _prefs?.getString('last_password_reset_time');
   }
@@ -99,5 +100,46 @@ class SharedPreferencesService {
   // Get the last login time
   static String? getLastLoginTime() {
     return _prefs?.getString('last_login_time');
+  }
+
+  // Add these methods to store notification history
+  static Future<void> saveNotificationHistory(Map<String, dynamic> notification) async {
+    final notificationsList = getNotificationHistory() ?? [];
+    notificationsList.add(notification);
+    await _prefs?.setString('notification_history', json.encode(notificationsList));
+  }
+
+  static List<Map<String, dynamic>>? getNotificationHistory() {
+    final historyString = _prefs?.getString('notification_history');
+    if (historyString == null || historyString.isEmpty) {
+      return [];
+    }
+    
+    try {
+      final List<dynamic> decoded = json.decode(historyString);
+      return decoded.map((item) => item as Map<String, dynamic>).toList();
+    } catch (e) {
+      print('Error parsing notification history: $e');
+      return [];
+    }
+  }
+
+  static Future<void> markNotificationAsRead(String notificationId) async {
+    final notificationsList = getNotificationHistory() ?? [];
+    for (var notification in notificationsList) {
+      if (notification['id'] == notificationId) {
+        notification['isRead'] = true;
+        break;
+      }
+    }
+    await _prefs?.setString('notification_history', json.encode(notificationsList));
+  }
+
+  static Future<void> markAllNotificationsAsRead() async {
+    final notificationsList = getNotificationHistory() ?? [];
+    for (var notification in notificationsList) {
+      notification['isRead'] = true;
+    }
+    await _prefs?.setString('notification_history', json.encode(notificationsList));
   }
 }

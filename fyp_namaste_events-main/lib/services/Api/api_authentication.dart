@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import '../../utils/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
 import 'package:fyp_namaste_events/utils/shared_preferences.dart';
@@ -60,33 +62,31 @@ class Api {
       };
     }
   }
-
-  static Future<Map<String, dynamic>> loginAdmin(
-      Map<String, dynamic> udata) async {
-    var url = Uri.parse("${APIConstants.baseUrl}superadmin/log_in");
-    debugPrint("Request URL: $url");
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(udata),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 400) {
-        return jsonDecode(response.body);
-      } else {
-        return {"message": "Server error: ${response.body}"};
-      }
-    } catch (e) {
-      debugPrint("Error: ${e.toString()}");
-      return {
-        "success": false,
-        "message": "Something went wrong. Please try again later."
-      };
+// Update your API methods to use the ApiConfig
+static Future<Map<String, dynamic>?> loginAdmin(String email, String password) async {
+  try {
+    final response = await http.post(
+      Uri.parse(ApiConfig.getUrl('superadmin/log_in')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      debugPrint('Login failed with status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+      return null;
     }
+  } catch (e) {
+    debugPrint('Error during superadmin login: $e');
+    return null;
   }
-
+}
+  
   static Future<Map<String, dynamic>> addInventory(
       Map<String, dynamic> vdata) async {
     var url = Uri.parse("${APIConstants.baseUrl}api/add_inventory");
@@ -898,52 +898,97 @@ static Future<Map<String, dynamic>?> verifyVendorOTP({
   }
 }
 
-static Future<Map<String, dynamic>?> resetVendorPassword({
-  required String token,
-  required String vendorId,
-  required String newPassword,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('${APIConstants.baseUrl}vendor/auth/reset-password'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'vendorId': vendorId,
-        'newPassword': newPassword,
-      }),
-    );
+// Add this method for vendor password reset
+  static Future<Map<String, dynamic>?> resetVendorPassword({
+    required String token,
+    required String vendorId,
+    required String newPassword,
+  }) async {
+    try {
+      debugPrint('Resetting vendor password for ID: $vendorId');
+      
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}vendor/auth/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'vendorId': vendorId,
+          'newPassword': newPassword,
+        }),
+      );
 
-    debugPrint("Reset vendor password response status: ${response.statusCode}");
-    debugPrint("Reset vendor password response body: ${response.body}");
+      debugPrint('Vendor password reset response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        // Send confirmation email
+        await sendVendorPasswordResetConfirmationEmail(vendorId);
+        return {'success': true, ...jsonDecode(response.body)};
+      } else {
+        return {'success': false, ...jsonDecode(response.body)};
+      }
+    } catch (e) {
+      debugPrint('Error resetting vendor password: $e');
+      return {'success': false, 'message': 'Error: ${e.toString()}'};
+    }
+  }
 
-    if (response.statusCode == 200) {
-      var responseData = jsonDecode(response.body);
-      return {
-        'success': true,
-        'message': responseData['message'] ?? "Password reset successfully"
-      };
-    } else {
-      try {
-        var responseData = jsonDecode(response.body);
+  // Add this method to send password reset confirmation email
+  static Future<Map<String, dynamic>> sendVendorPasswordResetConfirmationEmail(String email) async {
+    try {
+      debugPrint('Sending vendor password reset confirmation email to: $email');
+      
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}vendor/auth/send-password-reset-confirmation'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, ...jsonDecode(response.body)};
+      } else {
+        return {'success': false, ...jsonDecode(response.body)};
+      }
+    } catch (e) {
+      debugPrint('Error sending vendor password reset confirmation email: $e');
+      return {'success': false, 'message': 'Error: ${e.toString()}'};
+    }
+  }
+
+// Update the sendPasswordResetConfirmationEmail method
+  static Future<Map<String, dynamic>> sendPasswordResetConfirmationEmail(String email) async {
+    try {
+      debugPrint("Sending password reset confirmation email to: $email");
+      
+      final response = await http.post(
+        Uri.parse('${APIConstants.baseUrl}auth/send-password-reset-confirmation'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      debugPrint("Password reset email response status: ${response.statusCode}");
+      debugPrint("Password reset email response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        debugPrint('Error sending password reset confirmation email: ${response.body}');
         return {
           'success': false,
-          'message': responseData['message'] ?? "Failed to reset password",
-          'statusCode': response.statusCode
-        };
-      } catch (e) {
-        return {
-          'success': false,
-          'message': 'Error processing server response',
-          'statusCode': response.statusCode
+          'message': 'Failed to send confirmation email',
         };
       }
+    } catch (e) {
+      debugPrint('Exception sending password reset confirmation email: $e');
+      return {
+        'success': false,
+        'message': 'An error occurred while sending confirmation email',
+      };
     }
-  } catch (e) {
-    debugPrint("Reset vendor password error: ${e.toString()}");
-    return {'success': false, 'message': 'Error: ${e.toString()}'};
   }
-}
 }

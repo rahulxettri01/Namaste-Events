@@ -75,19 +75,43 @@ class _LoginPageState extends State<LoginPage> {
       "role": selectedRole,
     };
 
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
     try {
       if (selectedRole == "Super Admin") {
-        final response = await Api.loginAdmin(data);
+        debugPrint("Attempting Super Admin login with email: ${_controllerEmail.text}");
+        
+        // Fix the API call by providing the required arguments
+        final response = await Api.loginAdmin(_controllerEmail.text, _controllerPassword.text);
+        
+        // Close loading dialog
+        if (context.mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        
         if (response != null) {
-          int statusCode = response["status_code"];
+          int statusCode = response["status_code"] ?? 500;
           var newToken = response["token"];
+          debugPrint("Login response status code: $statusCode");
+          
           if (statusCode == 200) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Login successful! Welcome."),
-                backgroundColor: Colors.green,
-              ),
-            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Login successful! Welcome."),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
 
             // Save token
             prefs.setString("FrontToken", newToken);
@@ -99,16 +123,22 @@ class _LoginPageState extends State<LoginPage> {
               "role": "Super Admin",
             }));
             
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => AdminDashboardPage(token: newToken)),
-            );
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AdminDashboardPage(token: newToken)),
+              );
+            }
           } else {
             setState(() {
               errorMessage = response["message"] ?? "Login failed. Try again.";
             });
           }
+        } else {
+          setState(() {
+            errorMessage = "Server error. Please try again later.";
+          });
         }
       } else {
         final response = await Api.login(data);

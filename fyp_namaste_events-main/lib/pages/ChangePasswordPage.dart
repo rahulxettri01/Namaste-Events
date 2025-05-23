@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fyp_namaste_events/services/Api/api_authentication.dart';
+import 'package:fyp_namaste_events/utils/shared_preferences.dart'; // Add this import
 import 'package:fyp_namaste_events/utils/costants/api_constants.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -67,10 +68,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       final response = await Api.changeVendorPassword(
         token: widget.token,
         currentPassword: _currentPasswordController.text,
-        newPassword: _newPasswordController.text, vendorId: '',
+        newPassword: _newPasswordController.text, 
+        vendorId: _userId, // Use the vendorId extracted from the token
       );
 
       if (response['success'] == true) {
+        // Add notification for password change
+        await SharedPreferencesService.setLastPasswordChangeTime(DateTime.now());
+        
         // Password changed successfully
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password changed successfully')),
@@ -83,6 +88,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         });
       }
     } catch (e) {
+      // Error handling remains the same
       setState(() {
         // Improved error message that might include HTTP status codes
         if (e.toString().contains('404')) {
